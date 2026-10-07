@@ -1,6 +1,8 @@
 import { Bot, session } from 'grammy'
 import { config } from './config.js'
 import { registerActivation, replyError } from './flows/activation.js'
+import { registerConsult } from './flows/consult.js'
+import { registerMenu, registerMenuFallback } from './flows/menu.js'
 import { registerTransaction } from './flows/transaction.js'
 import { log } from './log.js'
 import { type BotContext, initialSession } from './session.js'
@@ -20,12 +22,14 @@ bot.use(async (ctx, next) => {
   }
 })
 
-// Commands are registered before the step handlers so "/start" is never read as an amount.
-// A new flow = a new file in flows/ with its own register function.
+// Order matters: commands first (so "/start" is never read as an amount), then each flow's step
+// handlers, then the fallback that greets on any other message. A new flow = a new file in
+// flows/ with its own register function + a button in the main menu (flows/menu.ts).
+registerMenu(bot)
 registerActivation(bot)
 registerTransaction(bot)
-
-bot.on('message', (ctx) => ctx.reply('Use /start para lançar uma receita ou despesa.'))
+registerConsult(bot)
+registerMenuFallback(bot)
 // Only .message: the underlying fetch error embeds the request URL, which contains the bot token.
 bot.catch((error) => log('error', { message: error.message }))
 process.on('unhandledRejection', (error) => {
@@ -43,8 +47,8 @@ if (config.telegramBotId && String(bot.botInfo.id) !== config.telegramBotId) {
   throw new Error(`TELEGRAM_BOT_TOKEN pertence ao bot ${bot.botInfo.id}, não a TELEGRAM_BOT_ID=${config.telegramBotId}.`)
 }
 await bot.api.setMyCommands([
-  { command: 'start', description: 'Lançar receita ou despesa' },
-  { command: 'cancelar', description: 'Cancelar o lançamento atual' },
+  { command: 'start', description: 'Menu: lançamento ou consulta' },
+  { command: 'cancelar', description: 'Cancelar a operação atual' },
 ])
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) process.once(signal, () => void bot.stop().catch(() => {}))

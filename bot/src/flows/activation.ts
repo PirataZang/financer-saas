@@ -2,7 +2,7 @@ import { Bot, GrammyError } from 'grammy'
 import { BackendError, backend } from '../clients/backend.js'
 import { log } from '../log.js'
 import { type BotContext, resetSession } from '../session.js'
-import { mainMenu } from './transaction.js'
+import { showMenu } from './menu.js'
 
 const ASK_CODE = '🔒 Para usar o bot, envie o <b>código de ativação</b>.'
 
@@ -33,19 +33,12 @@ export async function replyError(ctx: BotContext, error: unknown): Promise<void>
 }
 
 export function registerActivation(bot: Bot<BotContext>): void {
-  // /start: the backend says whether this Telegram user is activated (403 → replyError asks the code).
-  bot.command('start', async (ctx) => {
-    await backend.me(ctx.from!.id)
-    resetSession(ctx)
-    await ctx.reply('O que deseja lançar?', { reply_markup: mainMenu })
-  })
-
   bot.filter((ctx) => ctx.session.step === 'awaiting_code').on('message:text', async (ctx) => {
     // The code shouldn't linger in the chat history.
     await ctx.deleteMessage().catch(() => {})
     await backend.activate(ctx.from, ctx.message.text)
     log('activation.succeeded', { telegramUserId: ctx.from.id })
     resetSession(ctx)
-    await ctx.reply('✅ Bot ativado!\n\nO que deseja lançar?', { reply_markup: mainMenu })
+    await showMenu(ctx, '✅ Bot ativado!\n\nO que deseja fazer?')
   })
 }

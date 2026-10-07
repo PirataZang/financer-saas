@@ -18,8 +18,13 @@ class FinanceDashboardService
     /** Longer ranges are bucketed by month so a yearly chart isn't 365 bars. */
     private const MAX_DAILY_BUCKETS = 62;
 
-    public function summary(string $from, string $to): array
+    /**
+     * $from null = everything up to $to (from the first paid transaction).
+     */
+    public function summary(?string $from, string $to): array
     {
+        $from ??= $this->paid()->min('date') ?? $to;
+        $from = min($from, $to);
         $start = CarbonImmutable::parse($from);
         $end = CarbonImmutable::parse($to);
         $monthly = $start->diffInDays($end) + 1 > self::MAX_DAILY_BUCKETS;
@@ -56,6 +61,7 @@ class FinanceDashboardService
         }
 
         $totals = $this->totalsByType($this->inPeriod($from, $to));
+        $categories = $this->byCategory($from, $to);
 
         return [
             'period' => ['from' => $from, 'to' => $to, 'granularity' => $monthly ? 'month' : 'day'],
@@ -66,8 +72,9 @@ class FinanceDashboardService
             ],
             'opening_balance' => round($openingBalance, 2),
             'closing_balance' => $balance,
+            'counts' => array_map(fn (array $list) => array_sum(array_column($list, 'count')), $categories),
             'timeline' => $timeline,
-            'categories' => $this->byCategory($from, $to),
+            'categories' => $categories,
         ];
     }
 
@@ -101,7 +108,7 @@ class FinanceDashboardService
     {
         $rows = $this->inPeriod($from, $to)
             ->select('category_id', 'type')
-            ->selectRaw('SUM(amount) as total')
+            ->selectRaw('SUM(amount) as total, COUNT(*) as count')
             ->groupBy('category_id', 'type')
             ->with('category:id,name,icon,color')
             ->get();
@@ -114,6 +121,7 @@ class FinanceDashboardService
                 'icon' => $row->category?->icon,
                 'color' => $row->category?->color,
                 'total' => round((float) $row->getRawOriginal('total'), 2),
+                'count' => (int) $row->getRawOriginal('count'),
             ];
         }
 

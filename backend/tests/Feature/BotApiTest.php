@@ -147,6 +147,30 @@ class BotApiTest extends TestCase
         $this->postJson('/api/bot/finance/transactions', $this->payload($category->id, ['idempotency_key' => 'c']), $this->bot())->assertTooManyRequests();
     }
 
+    public function test_summary_is_the_balancete_and_defaults_to_all_time(): void
+    {
+        $this->getJson('/api/bot/finance/summary?to=2026-10-31', $this->bot())->assertForbidden();
+        $this->activate();
+        $salary = Category::create(['name' => 'Salário', 'type' => 'income']);
+        $market = Category::create(['name' => 'Mercado', 'type' => 'expense']);
+        foreach ([['income', '1000.00', $salary, '2025-03-10'], ['expense', '100.00', $market, '2026-10-01'], ['expense', '50.50', $market, '2026-10-02']] as [$type, $amount, $category, $date]) {
+            Transaction::create(['type' => $type, 'amount' => $amount, 'description' => 'x', 'category_id' => $category->id, 'date' => $date]);
+        }
+
+        $all = $this->getJson('/api/bot/finance/summary?to=2026-10-31', $this->bot())->assertOk()->json();
+        $this->assertSame('2025-03-10', $all['period']['from']);
+        $this->assertEquals(['income' => 1000, 'expense' => 150.5, 'balance' => 849.5], $all['totals']);
+        $this->assertSame(['income' => 1, 'expense' => 2], $all['counts']);
+        $this->assertSame(2, $all['categories']['expense'][0]['count']);
+
+        $october = $this->getJson('/api/bot/finance/summary?from=2026-10-01&to=2026-10-31', $this->bot())->assertOk()->json();
+        $this->assertEquals(['income' => 0, 'expense' => 150.5, 'balance' => -150.5], $october['totals']);
+        $this->assertEquals(1000, $october['opening_balance']);
+
+        $this->getJson('/api/bot/finance/summary', $this->bot())->assertUnprocessable();
+        $this->getJson('/api/bot/finance/summary?from=2026-11-01&to=2026-10-01', $this->bot())->assertUnprocessable();
+    }
+
     public function test_unactivated_user_cannot_create(): void
     {
         $category = Category::create(['name' => 'Mercado', 'type' => 'expense']);

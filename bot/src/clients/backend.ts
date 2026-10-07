@@ -1,3 +1,4 @@
+import type { Summary } from '../balance.js'
 import { config } from '../config.js'
 
 // The bot's only door to data: /api/bot/* on the backend. No database access, no finance rules
@@ -77,6 +78,9 @@ export const backend = {
 
   categories: (telegramUserId: number, type: TransactionType) =>
     request<CategoryOption[]>(telegramUserId, 'GET', `/bot/finance/categories?type=${type}`),
+
+  summary: (telegramUserId: number, from: string | null, to: string) =>
+    request<Summary>(telegramUserId, 'GET', `/bot/finance/summary?${new URLSearchParams(from ? { from, to } : { to })}`),
 
   createTransaction: (telegramUserId: number, transaction: NewTransaction) =>
     request<Transaction>(telegramUserId, 'POST', '/bot/finance/transactions', transaction),

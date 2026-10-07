@@ -9,6 +9,7 @@ use App\Http\Middleware\BotMiddleware;
 use App\Models\TelegramAccount;
 use App\Service\BotActivationService;
 use App\Service\CategoryService;
+use App\Service\FinanceDashboardService;
 use App\Service\TransactionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ use Illuminate\Validation\Rule;
 /**
  * API used only by the Telegram bot (routes/api.php, prefix `bot`). BotMiddleware authenticates
  * the bot itself (BOT_API_TOKEN) and the Telegram user; no user permissions apply here, and
- * the bot can only list categories and create transactions — no admin CRUD.
+ * the bot can list categories, read the balancete and create transactions — no admin CRUD.
  */
 class BotController extends Controller
 {
@@ -26,6 +27,7 @@ class BotController extends Controller
         protected BotActivationService $activationService,
         protected CategoryService $categoryService,
         protected TransactionService $transactionService,
+        protected FinanceDashboardService $dashboardService,
     ) {
     }
 
@@ -56,6 +58,20 @@ class BotController extends Controller
         $validated = $request->validate(['type' => ['required', Rule::enum(TransactionType::class)]]);
 
         return response()->json($this->categoryService->options(TransactionType::from($validated['type'])));
+    }
+
+    /**
+     * Balancete: same aggregates as the web dashboard (paid only). Dates come from the bot, in the
+     * user's timezone; without `from` it covers everything up to `to`.
+     */
+    public function summary(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['required', 'date_format:Y-m-d', 'after_or_equal:from'],
+        ]);
+
+        return response()->json($this->dashboardService->summary($validated['from'] ?? null, $validated['to']));
     }
 
     /**

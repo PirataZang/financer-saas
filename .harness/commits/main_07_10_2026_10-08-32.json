@@ -1,0 +1,1284 @@
+{
+  "branch": "main",
+  "commit": {
+    "hash": "4d28bb0a1e4cc73e5fa56d58ed14e5839bdb277a",
+    "short": "4d28bb0",
+    "parents": [],
+    "merge": false,
+    "author": {
+      "name": "Igor Fronza",
+      "email": "igorfronza20@gmail.com"
+    },
+    "authored_at": "2026-10-07T10:08:32-03:00",
+    "committed_at": "2026-10-07T10:08:32-03:00",
+    "subject": "init",
+    "body": ""
+  },
+  "stats": {
+    "files": 210,
+    "additions": 27891,
+    "deletions": 0
+  },
+  "files": [
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/README-UK.md",
+      "additions": 83,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/README.md",
+      "additions": 83,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/SKILL.md",
+      "additions": 134,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/SKILL.md.en",
+      "additions": 111,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/SKILL.md.uk",
+      "additions": 107,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/agents/openai.yaml",
+      "additions": 7,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/evals/evals.json",
+      "additions": 136,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/metadata.json",
+      "additions": 69,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/references/context-engineering-pattern.md",
+      "additions": 150,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/references/gotchas.md",
+      "additions": 209,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/references/lifecycle-bootstrap-pattern.md",
+      "additions": 264,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/references/memory-persistence-pattern.md",
+      "additions": 110,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/references/multi-agent-pattern.md",
+      "additions": 193,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/references/skill-runtime-pattern.md",
+      "additions": 43,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/references/tool-registry-pattern.md",
+      "additions": 199,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/scripts/commit-log.mjs",
+      "additions": 189,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/scripts/commit-log.test.mjs",
+      "additions": 86,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/scripts/create-harness.mjs",
+      "additions": 82,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/scripts/lib/harness-utils.mjs",
+      "additions": 440,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/scripts/render-assessment-html.mjs",
+      "additions": 26,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/scripts/run-benchmark.mjs",
+      "additions": 169,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/scripts/validate-harness.mjs",
+      "additions": 43,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/templates/agents.md",
+      "additions": 68,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/templates/feature-list.json",
+      "additions": 44,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/templates/feature-list.schema.json",
+      "additions": 47,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/templates/init.sh",
+      "additions": 78,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/templates/progress.md",
+      "additions": 51,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".claude/skills/harness-creator/templates/session-handoff.md",
+      "additions": 40,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".env.example",
+      "additions": 38,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".githooks/commit-log.mjs",
+      "additions": 189,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".githooks/post-commit",
+      "additions": 4,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": ".gitignore",
+      "additions": 7,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "README.md",
+      "additions": 118,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/.editorconfig",
+      "additions": 18,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/.env.example",
+      "additions": 60,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/.gitattributes",
+      "additions": 11,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/.gitignore",
+      "additions": 27,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/.npmrc",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/Dockerfile",
+      "additions": 44,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Attributes/Permission.php",
+      "additions": 18,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Console/Commands/CustomerCommand.php",
+      "additions": 185,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Console/Commands/PermissionCommand.php",
+      "additions": 118,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Enums/CategoryType.php",
+      "additions": 47,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Enums/Concerns/HasOptions.php",
+      "additions": 22,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Enums/CustomerStatus.php",
+      "additions": 50,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Enums/TransactionSource.php",
+      "additions": 49,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Enums/TransactionStatus.php",
+      "additions": 37,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Enums/TransactionType.php",
+      "additions": 38,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/ActivityLogController.php",
+      "additions": 70,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/AuthController.php",
+      "additions": 57,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/Bot/BotController.php",
+      "additions": 94,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/CategoryController.php",
+      "additions": 81,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/Controller.php",
+      "additions": 8,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/CustomerController.php",
+      "additions": 98,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/DashboardController.php",
+      "additions": 24,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/PermissionController.php",
+      "additions": 24,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/TransactionController.php",
+      "additions": 93,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/UserController.php",
+      "additions": 104,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/ZipCodeController.php",
+      "additions": 38,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Middleware/AuthMiddleware.php",
+      "additions": 44,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Middleware/BotMiddleware.php",
+      "additions": 58,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Middleware/CheckPermission.php",
+      "additions": 54,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Models/Category.php",
+      "additions": 40,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Models/Concerns/Auditable.php",
+      "additions": 30,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Models/Customer.php",
+      "additions": 86,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Models/Permission.php",
+      "additions": 16,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Models/TelegramAccount.php",
+      "additions": 26,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Models/Transaction.php",
+      "additions": 72,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Models/User.php",
+      "additions": 118,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Providers/AppServiceProvider.php",
+      "additions": 36,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/AuthService.php",
+      "additions": 80,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/BotActivationService.php",
+      "additions": 62,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/CategoryService.php",
+      "additions": 90,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/CustomerService.php",
+      "additions": 131,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/DashboardService.php",
+      "additions": 35,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/FinanceDashboardService.php",
+      "additions": 122,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/PermissionService.php",
+      "additions": 248,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/TransactionService.php",
+      "additions": 103,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/UserService.php",
+      "additions": 170,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/ZipCodeService.php",
+      "additions": 71,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/artisan",
+      "additions": 18,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/bootstrap/app.php",
+      "additions": 38,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/bootstrap/cache/.gitignore",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/bootstrap/providers.php",
+      "additions": 7,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/composer.json",
+      "additions": 65,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/composer.lock",
+      "additions": 8495,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/config/app.php",
+      "additions": 128,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/config/auth.php",
+      "additions": 117,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/config/cache.php",
+      "additions": 136,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/config/cors.php",
+      "additions": 32,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/config/database.php",
+      "additions": 184,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/config/filesystems.php",
+      "additions": 80,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/config/logging.php",
+      "additions": 132,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/config/mail.php",
+      "additions": 118,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/config/permissions.php",
+      "additions": 49,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/config/queue.php",
+      "additions": 129,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/config/rate-limit.php",
+      "additions": 55,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/config/services.php",
+      "additions": 53,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/config/session.php",
+      "additions": 233,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/database/.gitignore",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/database/factories/CustomerFactory.php",
+      "additions": 33,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/database/factories/UserFactory.php",
+      "additions": 55,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/database/migrations/0001_01_01_000000_create_users_table.php",
+      "additions": 52,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/database/migrations/0001_01_01_000001_create_cache_table.php",
+      "additions": 35,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/database/migrations/0001_01_01_000002_create_jobs_table.php",
+      "additions": 59,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/database/migrations/0001_01_01_000003_create_activity_log_table.php",
+      "additions": 34,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/database/migrations/0001_01_01_000004_create_permissions_tables.php",
+      "additions": 54,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/database/migrations/0001_01_01_000005_create_customers_table.php",
+      "additions": 54,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/database/migrations/0001_01_01_000006_create_finance_tables.php",
+      "additions": 74,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/database/seeders/DatabaseSeeder.php",
+      "additions": 66,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/entrypoint.sh",
+      "additions": 48,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/phpunit.xml",
+      "additions": 46,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/public/.htaccess",
+      "additions": 25,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/public/favicon.ico",
+      "additions": 0,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/public/index.php",
+      "additions": 20,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/public/robots.txt",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/routes/api.php",
+      "additions": 123,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/routes/web.php",
+      "additions": 11,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/storage/app/.gitignore",
+      "additions": 4,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/storage/app/private/.gitignore",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/storage/app/public/.gitignore",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/storage/framework/.gitignore",
+      "additions": 9,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/storage/logs/.gitignore",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Feature/AuthTest.php",
+      "additions": 47,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Feature/AuthorizationTest.php",
+      "additions": 267,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Feature/BotApiTest.php",
+      "additions": 162,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Feature/CustomerCommandTest.php",
+      "additions": 106,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Feature/CustomerTest.php",
+      "additions": 221,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Feature/FinanceTest.php",
+      "additions": 203,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Feature/PermissionCommandTest.php",
+      "additions": 148,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Feature/PublicCustomerTest.php",
+      "additions": 101,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Feature/UserTest.php",
+      "additions": 60,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Feature/ZipCodeTest.php",
+      "additions": 99,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/TestCase.php",
+      "additions": 10,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Unit/CustomerStatusTest.php",
+      "additions": 27,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Unit/PermissionKeyTest.php",
+      "additions": 33,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "bot/.dockerignore",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "bot/.gitignore",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "bot/Dockerfile",
+      "additions": 18,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "bot/package-lock.json",
+      "additions": 160,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "bot/package.json",
+      "additions": 22,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "bot/src/clients/backend.ts",
+      "additions": 83,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "bot/src/config.ts",
+      "additions": 17,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "bot/src/flows/activation.ts",
+      "additions": 51,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "bot/src/flows/transaction.ts",
+      "additions": 131,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "bot/src/index.ts",
+      "additions": 56,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "bot/src/log.ts",
+      "additions": 5,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "bot/src/money.test.ts",
+      "additions": 30,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "bot/src/money.ts",
+      "additions": 36,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "bot/src/session.ts",
+      "additions": 32,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "bot/tsconfig.json",
+      "additions": 14,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "design.md",
+      "additions": 251,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "docker-compose.yml",
+      "additions": 117,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/Dockerfile",
+      "additions": 22,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/index.html",
+      "additions": 16,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/package.json",
+      "additions": 31,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/postcss.config.js",
+      "additions": 6,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/App.vue",
+      "additions": 14,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/finance/CategorySelect.vue",
+      "additions": 33,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/layout/AppSidebar.vue",
+      "additions": 202,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/layout/GlobalSearch.vue",
+      "additions": 248,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/layout/SidebarMenuItem.vue",
+      "additions": 168,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/ui/ActivityLogModal.vue",
+      "additions": 315,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/ui/EChart.vue",
+      "additions": 41,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/ui/FormActions.vue",
+      "additions": 36,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/ui/PageHeader.vue",
+      "additions": 25,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/ui/StatusBadge.vue",
+      "additions": 92,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/utils/AgGrid.vue",
+      "additions": 451,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/utils/Button.vue",
+      "additions": 223,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/utils/Input.vue",
+      "additions": 205,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/utils/Modal.vue",
+      "additions": 187,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/utils/Select.vue",
+      "additions": 509,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/utils/Switch.vue",
+      "additions": 124,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/utils/TextArea.vue",
+      "additions": 93,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/layouts/AppLayout.vue",
+      "additions": 190,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/main.js",
+      "additions": 17,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/Dashboard.vue",
+      "additions": 197,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/Forbidden.vue",
+      "additions": 13,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/Login.vue",
+      "additions": 138,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/customer/CustomerForm.vue",
+      "additions": 252,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/customer/CustomerList.vue",
+      "additions": 336,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/finance/CategoryForm.vue",
+      "additions": 189,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/finance/CategoryList.vue",
+      "additions": 338,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/finance/FinanceDashboard.vue",
+      "additions": 187,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/finance/TransactionForm.vue",
+      "additions": 137,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/finance/TransactionList.vue",
+      "additions": 224,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/finance/dashboardCharts.js",
+      "additions": 143,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/user/UserForm.vue",
+      "additions": 238,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/user/UserList.vue",
+      "additions": 276,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/user/UserPermissions.vue",
+      "additions": 198,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/permissions.js",
+      "additions": 79,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/permissions.test.js",
+      "additions": 67,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/plugins/permissions.js",
+      "additions": 26,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/plugins/swal.js",
+      "additions": 143,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/router/index.js",
+      "additions": 302,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/services/api.js",
+      "additions": 38,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/services/zipCode.js",
+      "additions": 23,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/stores/auth.js",
+      "additions": 179,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/style.css",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/styles/_colors.scss",
+      "additions": 123,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/styles/form.scss",
+      "additions": 267,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/styles/main.scss",
+      "additions": 144,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/styles/swal.scss",
+      "additions": 83,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/utils/masks.js",
+      "additions": 64,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/utils/masks.test.js",
+      "additions": 16,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/utils/money.js",
+      "additions": 6,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/utils/period.js",
+      "additions": 33,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/utils/period.test.js",
+      "additions": 23,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/tailwind.config.js",
+      "additions": 21,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/vite.config.js",
+      "additions": 20,
+      "deletions": 0
+    }
+  ]
+}

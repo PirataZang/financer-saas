@@ -23,13 +23,14 @@ Route::prefix('public')->middleware('throttle:public')->group(function () {
 });
 
 // Telegram bot integration: BotMiddleware (BOT_API_TOKEN + activated Telegram user), limits
-// keyed per Telegram user. The bot can only read categories and create transactions.
+// keyed per Telegram user. The bot can read categories and the balancete, and create transactions.
 Route::prefix('bot')->group(function () {
     Route::post('/activate', [BotController::class, 'activate'])->middleware(['bot:activation', 'throttle:bot-activation']);
 
     Route::middleware(['bot', 'throttle:bot'])->group(function () {
         Route::get('/me', [BotController::class, 'me']);
         Route::get('/finance/categories', [BotController::class, 'categories']);
+        Route::get('/finance/summary', [BotController::class, 'summary']);
         Route::post('/finance/transactions', [BotController::class, 'createTransaction'])->middleware('throttle:bot-transactions');
     });
 });

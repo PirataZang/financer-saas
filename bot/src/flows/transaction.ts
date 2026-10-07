@@ -4,13 +4,18 @@ import { config } from '../config.js'
 import { log } from '../log.js'
 import { formatMoney, parseMoney, todayIn } from '../money.js'
 import { type BotContext, type Draft, escapeHtml, resetSession } from '../session.js'
+import { showMenu } from './menu.js'
 
-// Wizard: type → amount → description → category → confirm. Only collects input; amounts and
+// "Lançamento" wizard: type → amount → description → category → confirm. Only collects input; amounts and
 // categories are validated again by the backend, which owns every finance rule.
 
 const TYPE_LABEL: Record<TransactionType, string> = { income: '💰 Receita', expense: '💸 Despesa' }
 
-export const mainMenu = new InlineKeyboard().text(TYPE_LABEL.income, 'new:income').text(TYPE_LABEL.expense, 'new:expense')
+const typeMenu = new InlineKeyboard()
+  .text(TYPE_LABEL.income, 'new:income')
+  .text(TYPE_LABEL.expense, 'new:expense')
+  .row()
+  .text('❌ Cancelar', 'cancel')
 
 const cancelButton = new InlineKeyboard().text('❌ Cancelar', 'cancel')
 
@@ -35,15 +40,10 @@ function summary(draft: Draft): string {
 }
 
 export function registerTransaction(bot: Bot<BotContext>): void {
-  const cancel = async (ctx: BotContext) => {
-    resetSession(ctx)
-    await ctx.reply('Lançamento cancelado.\n\nO que deseja lançar?', { reply_markup: mainMenu })
-  }
-  bot.command('cancelar', cancel)
-  bot.callbackQuery('cancel', async (ctx) => {
+  bot.callbackQuery('launch', async (ctx) => {
     await ctx.answerCallbackQuery()
-    await ctx.editMessageReplyMarkup().catch(() => {})
-    await cancel(ctx)
+    resetSession(ctx)
+    await ctx.reply('O que deseja lançar?', { reply_markup: typeMenu })
   })
 
   bot.callbackQuery(/^new:(income|expense)$/, async (ctx) => {
@@ -79,7 +79,7 @@ export function registerTransaction(bot: Bot<BotContext>): void {
     const categories = await backend.categories(ctx.from.id, type)
     if (!categories.length) {
       resetSession(ctx)
-      await ctx.reply('Nenhuma categoria ativa para esse tipo. Cadastre em Financeiro > Categorias.', { reply_markup: mainMenu })
+      await showMenu(ctx, 'Nenhuma categoria ativa para esse tipo. Cadastre em Financeiro > Categorias.\n\nO que deseja fazer?')
       return
     }
 
@@ -126,6 +126,6 @@ export function registerTransaction(bot: Bot<BotContext>): void {
     const saved = summary(draft).replace('<b>Confira os dados:</b>', '<b>✅ Lançamento salvo!</b>')
     resetSession(ctx)
     await ctx.editMessageText(saved, { parse_mode: 'HTML' }).catch(() => {})
-    await ctx.reply('Deseja lançar outro?', { reply_markup: mainMenu })
+    await showMenu(ctx, 'Algo mais?')
   })
 }

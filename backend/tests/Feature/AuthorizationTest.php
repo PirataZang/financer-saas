@@ -219,6 +219,7 @@ class AuthorizationTest extends TestCase
             'App\Http\Controllers\Bot\BotController@activate',
             'App\Http\Controllers\Bot\BotController@me',
             'App\Http\Controllers\Bot\BotController@categories',
+            'App\Http\Controllers\Bot\BotController@summary',
             'App\Http\Controllers\Bot\BotController@createTransaction',
         ];
 

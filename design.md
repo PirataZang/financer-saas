@@ -234,8 +234,12 @@ banco**: só `/api/bot/*`.
   (tentativas de código), `bot-transactions` (teto de lançamentos/hora).
 - **Idempotência**: o bot envia `idempotency_key` = `chat:mensagem de confirmação`; o backend grava
   `external_id = "<telegram_user_id>:<key>"` — retry/clique duplo não duplica.
-- **Novo fluxo no bot**: um arquivo em `bot/src/flows/` com sua função `register*`, registrado em `index.ts`.
-  O bot só coleta dados; regras financeiras ficam no backend.
+- **Conversa**: qualquer mensagem fora de um fluxo abre o menu (`flows/menu.ts`: Lançamento / Consultar /
+  Cancelar). Consultar usa `GET /api/bot/finance/summary` — os mesmos agregados do dashboard web
+  (`FinanceDashboardService`), formatados como balancete em `bot/src/balance.ts`.
+- **Novo fluxo no bot**: um arquivo em `bot/src/flows/` com sua função `register*`, registrado em `index.ts`
+  antes do `registerMenuFallback`, e um botão no menu principal. O bot só coleta e formata; regras e contas
+  financeiras ficam no backend.
 
 ## 13. Checklist antes de abrir PR
 
