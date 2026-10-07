@@ -1,0 +1,26 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Model;
+
+#[Fillable(['telegram_user_id', 'username', 'first_name', 'activated_at', 'revoked_at'])]
+class TelegramAccount extends Model
+{
+    protected function casts(): array
+    {
+        return [
+            'telegram_user_id' => 'integer',
+            'activated_at' => 'datetime',
+            'revoked_at' => 'datetime',
+        ];
+    }
+
+    /** Shown as the "who" of bot-made changes in the activity log (causer). */
+    protected function name(): Attribute
+    {
+        return Attribute::get(fn () => 'Telegram · '.($this->username ? "@{$this->username}" : ($this->first_name ?: $this->telegram_user_id)));
+    }
+}

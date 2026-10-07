@@ -1,0 +1,118 @@
+# Financial Bot
+
+CRM gerado pela skill `create-crm`, seguindo o mesmo padrão de arquitetura e design do
+peppercore-admin: Laravel 13 (API) + Vue 3 (SPA) + PostgreSQL, tudo em Docker.
+
+Veja [`design.md`](design.md) para os padrões de componente, página e backend a seguir ao
+adicionar novas telas/recursos.
+
+## Subindo o projeto
+
+```bash
+cp .env.example .env      # ajuste as portas/senha se quiser
+docker compose up -d --build
+```
+
+O `entrypoint.sh` do backend instala as dependências do Composer, cria o `.env` do Laravel,
+espera o Postgres ficar disponível, gera a `APP_KEY` e roda as migrations automaticamente na
+primeira subida.
+
+- Frontend: http://localhost:5174 (porta configurável via `FRONTEND_PORT`)
+- Backend/API: http://localhost:8000 (porta configurável via `BACKEND_PORT`)
+- Postgres: porta configurável via `DB_PORT_EXTERNAL`; Redis: via `REDIS_PORT_EXTERNAL`
+
+## Rota da API (local x VPS)
+
+Todas as chamadas do front usam **uma** variável do `.env` da raiz:
+
+```env
+VITE_API_URL=http://localhost:8000/api   # local: backend direto (padrão)
+VITE_API_URL=/peppercore-admin/api       # VPS: rota configurada no Nginx
+```
+
+O backend sempre serve em `/api`; na VPS o Nginx troca o prefixo. Depois de alterar,
+`docker compose up -d frontend`. Exemplo de Nginx na VPS:
+
+```nginx
+location /peppercore-admin/api/ {
+    proxy_pass http://127.0.0.1:8000/api/;   # a barra final troca /peppercore-admin/api/ por /api/
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+location / {
+    proxy_pass http://127.0.0.1:5174;
+}
+```
+
+## Instalando as dependências do frontend
+
+O container do frontend roda `npm install` sozinho na build da imagem. Se preferir rodar fora
+do Docker durante o desenvolvimento:
+
+```bash
+cd frontend && npm install && npm run dev
+```
+
+## Seed / usuário de teste
+
+```bash
+docker compose exec backend php artisan db:seed
+```
+
+Roda automaticamente a cada subida do container (sincroniza as permissões e cria o usuário só se não
+existir). Usuário de login, **master** (acesso total):
+
+- **E-mail**: `test@example.com`
+- **Senha**: `1234`
+
+## Bot do Telegram
+
+Container `bot` (pasta `bot/`, Node + TypeScript). No `.env` da raiz:
+
+```env
+TELEGRAM_BOT_TOKEN=          # do @BotFather
+TELEGRAM_BOT_ID=             # número antes do ':' no token (checagem de sanidade)
+TELEGRAM_ACTIVATION_CODE=AVT-123
+BOT_API_TOKEN=               # segredo bot↔backend: openssl rand -hex 32
+```
+
+`docker compose up -d --build bot backend`. No Telegram: `/start` → código de ativação → Receita/Despesa →
+valor → descrição → categoria → confirmar. A transação aparece em **Financeiro > Transações** com origem
+Telegram. Revogar um usuário:
+`docker compose exec backend php artisan tinker --execute='App\Models\TelegramAccount::where("telegram_user_id", ID)->update(["revoked_at" => now()]);'`
+
+Desenvolvimento fora do Docker (pare o container `bot` antes — o Telegram só aceita um polling por token): `cd bot && npm install && BACKEND_URL=http://localhost:8001/api npm run dev`.
+
+## Rate limiting / proxy
+
+Limites por IP em `backend/config/rate-limit.php` (ajustáveis por `RATE_LIMIT_*` no `.env` do backend).
+Atrás de Nginx/Docker o IP real vem do `X-Forwarded-For` de proxies confiáveis (`TRUSTED_PROXIES`, padrão
+redes privadas). Na VPS, publique o backend só para o Nginx: `"127.0.0.1:${BACKEND_PORT:-8000}:8000"`.
+
+## Log de commits
+
+Cada commit gera `.harness/commits/<branch>_<dd_mm_yyyy>_<HH-MM-SS>.json` com o que aquele commit fez
+(arquivos, linhas, mensagem, autor) e, fora da `main`, todos os commits da branch. O hook vem versionado em
+`.githooks/`; num clone novo, ative uma vez: `git config core.hooksPath .githooks`. (Skill: `.claude/skills/harness-creator`.)
+
+## Testes
+
+```bash
+docker compose exec backend php artisan test   # sqlite em memória, nunca toca o banco de dev
+cd frontend && npm test                          # regras de permissão/menu/busca/períodos (node --test)
+cd bot && npm test                               # parser de valores do bot (node --test)
+```
+
+## Estrutura
+
+```
+backend/    Laravel 13 — API, auth por bearer token custom (AuthMiddleware/AuthService),
+            auditoria via spatie/laravel-activitylog, Redis (cache/sessão/fila)
+frontend/   Vue 3 + Vite — SPA (login, dashboards com ECharts, usuários, clientes, financeiro)
+bot/        Node + TypeScript — bot do Telegram (grammY); fala só com /api/bot/* do backend
+```
+
+Componentes reutilizáveis inclusos: `Input`, `TextArea`, `Switch`, `Button`, `AgGrid`, `Modal`,
+`EChart`, `PageHeader`, `FormActions`, `ActivityLogModal`. Telas: `Login`, `Dashboard` e um CRUD
+completo de `Usuários` (com botão "Histórico" mostrando o log de alterações). Para adicionar uma
+tela nova, siga o padrão descrito em `design.md`.

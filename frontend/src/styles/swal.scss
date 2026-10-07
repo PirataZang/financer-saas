@@ -1,0 +1,83 @@
+// SweetAlert2 — tema Financial Bot
+
+.app-swal-popup {
+  border-radius: 16px !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: var(--shadow-lg) !important;
+  font-family: var(--font-sans) !important;
+  padding: 1.5rem !important;
+}
+
+.app-swal-title {
+  font-size: 1.2rem !important;
+  font-weight: 700 !important;
+  color: var(--color-text) !important;
+}
+
+.app-swal-html {
+  font-size: 0.925rem !important;
+  color: var(--color-text-secondary) !important;
+  line-height: 1.5 !important;
+}
+
+.app-swal-actions {
+  gap: 10px !important;
+  margin-top: 1.25rem !important;
+}
+
+.app-swal-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  min-width: 110px !important;
+  height: 40px !important;
+  padding: 0 16px !important;
+  margin: 0 !important;
+  border: 1px solid transparent !important;
+  border-radius: 10px !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: background 0.15s ease, transform 0.12s ease !important;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+}
+
+.app-swal-btn--confirm {
+  background: var(--color-primary) !important;
+  color: #fff !important;
+}
+
+.app-swal-btn--danger {
+  background: var(--color-danger) !important;
+  color: #fff !important;
+}
+
+.app-swal-btn--cancel {
+  background: #fff !important;
+  color: var(--color-text-secondary) !important;
+  border-color: var(--color-border) !important;
+}
+
+.app-swal-btn--deny {
+  background: var(--color-bg-muted) !important;
+  color: var(--color-text) !important;
+}
+
+.app-swal-toast {
+  border-radius: 12px !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: var(--shadow-md) !important;
+  font-family: var(--font-sans) !important;
+  padding: 0.75rem 1rem !important;
+}
+
+.app-swal-toast-title {
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  color: var(--color-text) !important;
+}

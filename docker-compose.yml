@@ -1,0 +1,117 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_NAME:-financial-bot}_backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ./backend:/var/www/html
+    environment:
+      - APP_ENV=${APP_ENV:-local}
+      - APP_DEBUG=${APP_DEBUG:-true}
+      - APP_KEY=${APP_KEY}
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE:-financial_bot}
+      - DB_USERNAME=${DB_USER:-financial_bot}
+      - DB_PASSWORD=${DB_PASSWORD:-01a25d4dc931586475f11506}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-6f93b8c8bd1cc6b1f3fa83b7}
+      - BOT_API_TOKEN=${BOT_API_TOKEN:-}
+      - TELEGRAM_ACTIVATION_CODE=${TELEGRAM_ACTIVATION_CODE:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - financial_bot_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: ${PROJECT_NAME:-financial-bot}_frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-5174}:5174"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:${BACKEND_PORT:-8000}/api}
+    depends_on:
+      - backend
+    networks:
+      - financial_bot_network
+
+  # Telegram bot: long polling (no ports), talks only to the backend API on the internal network.
+  bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_NAME:-financial-bot}_bot
+    restart: unless-stopped
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_BOT_ID=${TELEGRAM_BOT_ID:-}
+      - BOT_API_TOKEN=${BOT_API_TOKEN:-}
+      - BACKEND_URL=http://backend:8000/api
+      - BOT_TIMEZONE=${BOT_TIMEZONE:-America/Sao_Paulo}
+    depends_on:
+      - backend
+    networks:
+      - financial_bot_network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: ${PROJECT_NAME:-financial-bot}_postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${DB_DATABASE:-financial_bot}
+      - POSTGRES_USER=${DB_USER:-financial_bot}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-01a25d4dc931586475f11506}
+    ports:
+      - "${DB_PORT_EXTERNAL:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-financial_bot} -d ${DB_DATABASE:-financial_bot}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - financial_bot_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: ${PROJECT_NAME:-financial-bot}_redis
+    restart: unless-stopped
+    command: redis-server --requirepass "${REDIS_PASSWORD:-6f93b8c8bd1cc6b1f3fa83b7}" --bind 0.0.0.0 --protected-mode no
+    ports:
+      - "${REDIS_PORT_EXTERNAL:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - financial_bot_network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  financial_bot_network:
+    driver: bridge

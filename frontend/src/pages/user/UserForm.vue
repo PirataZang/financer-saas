@@ -1,0 +1,238 @@
+<template>
+    <div class="page fade-in">
+        <PageHeader :title="isEdit ? 'Editar Usuário' : 'Novo Usuário'" :subtitle="isEdit ? 'Atualize as informações do usuário selecionado.' : 'Cadastre um novo usuário administrador no sistema.'" :icon="isEdit ? 'fa-solid fa-user-pen' : 'fa-solid fa-user-plus'" />
+
+        <div class="form-card">
+            <div v-if="loading" class="loading-state">
+                <i class="fa-solid fa-spinner fa-spin" aria-hidden="true" />
+                <span>Carregando dados do usuário...</span>
+            </div>
+
+            <form v-else @submit.prevent="submitForm">
+                <div v-if="canManagePermissions" class="tabs" role="tablist">
+                    <button type="button" role="tab" class="tab" :class="{ active: activeTab === 'general' }" :aria-selected="activeTab === 'general'" @click="activeTab = 'general'">
+                        <i class="fa-solid fa-id-card" aria-hidden="true" /> Dados
+                    </button>
+                    <button type="button" role="tab" class="tab" :class="{ active: activeTab === 'permissions' }" :aria-selected="activeTab === 'permissions'" @click="activeTab = 'permissions'">
+                        <i class="fa-solid fa-shield-halved" aria-hidden="true" /> Permissões
+                        <span class="tab__count">{{ form.permissions.length }}</span>
+                    </button>
+                </div>
+
+                <div v-show="activeTab === 'general'" class="form-grid">
+                    <div class="col-6">
+                        <Input v-model="form.name" label="Nome Completo" placeholder="Digite o nome..." required />
+                    </div>
+
+                    <div class="col-6">
+                        <Input v-model="form.email" label="Endereço de E-mail" type="email" placeholder="exemplo@empresa.com" required />
+                    </div>
+
+                    <Input :class="auth.user?.master ? 'col-8' : 'col-10'" v-model="form.password" :label="passwordLabel" type="password" :required="!isEdit" placeholder="Mínimo 8 caracteres..." />
+
+                    <Switch class="col-2" v-model="form.active" label="Situação" :text-label="form.active ? 'Ativo' : 'Inativo'" />
+
+                    <!-- Only a master can make someone master (the API enforces the same). -->
+                    <Switch v-if="auth.user?.master" class="col-2" v-model="form.master" label="Master" :text-label="form.master ? 'Acesso total' : 'Não'" />
+                </div>
+
+                <UserPermissions
+                    v-if="canManagePermissions && activeTab === 'permissions'"
+                    v-model="form.permissions"
+                    :catalog="catalog"
+                    :master="form.master"
+                />
+
+                <div v-if="error" class="form-error" style="margin-top: 16px">
+                    {{ error }}
+                </div>
+
+                <FormActions :saving="saving" @cancel="$router.push('/user')" />
+            </form>
+        </div>
+    </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { apiFetch } from '@/services/api'
+import Input from '@/components/utils/Input.vue'
+import Switch from '@/components/utils/Switch.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import FormActions from '@/components/ui/FormActions.vue'
+import UserPermissions from './UserPermissions.vue'
+import { useAuthStore } from '@/stores/auth'
+
+const router = useRouter()
+const route = useRoute()
+const auth = useAuthStore()
+
+const userId = computed(() => route.params.id)
+const isEdit = computed(() => !!userId.value)
+const passwordLabel = computed(() => (isEdit.value ? 'Senha de Acesso (deixe em branco para não alterar)' : 'Senha de Acesso'))
+
+const loading = ref(false)
+const saving = ref(false)
+const error = ref('')
+
+const form = ref({
+    name: '',
+    email: '',
+    password: '',
+    active: true,
+    master: false,
+    permissions: [],
+})
+
+const activeTab = ref('general')
+const catalog = ref([])
+const savedPermissions = ref([])
+const canManagePermissions = computed(() => auth.can('users.permissions'))
+
+const fetchCatalog = async () => {
+    if (!canManagePermissions.value) return
+    const response = await apiFetch('/permissions')
+    if (response.ok) catalog.value = await response.json()
+}
+
+const sameKeys = (a, b) => a.length === b.length && a.every((key) => b.includes(key))
+
+const fetchUser = async () => {
+    if (!isEdit.value) return
+
+    loading.value = true
+    error.value = ''
+    try {
+        const response = await apiFetch(`/users/${userId.value}`)
+        if (!response.ok) {
+            throw new Error('Não foi possível carregar os dados deste usuário.')
+        }
+        const data = await response.json()
+        form.value.name = data.name
+        form.value.email = data.email
+        form.value.password = ''
+        form.value.active = data.active ?? true
+        form.value.permissions = data.permissions ?? []
+        savedPermissions.value = [...form.value.permissions]
+        form.value.master = !!data.master
+    } catch (err) {
+        error.value = err.message
+    } finally {
+        loading.value = false
+    }
+}
+
+const submitForm = async () => {
+    saving.value = true
+    error.value = ''
+
+    const payload = {
+        name: form.value.name,
+        email: form.value.email,
+        active: form.value.active,
+    }
+
+    if (auth.user?.master) {
+        payload.master = form.value.master
+    }
+
+    if (form.value.password) {
+        payload.password = form.value.password
+    }
+
+    const url = isEdit.value ? `/users/${userId.value}` : '/users'
+    const method = isEdit.value ? 'PUT' : 'POST'
+
+    try {
+        const response = await apiFetch(url, {
+            method,
+            body: JSON.stringify(payload),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Erro ao processar requisição.')
+        }
+
+        if (canManagePermissions.value && !form.value.master && !sameKeys(form.value.permissions, savedPermissions.value)) {
+            const permResponse = await apiFetch(`/users/${data.id}/permissions`, {
+                method: 'PUT',
+                body: JSON.stringify({ permissions: form.value.permissions }),
+            })
+            if (!permResponse.ok) {
+                const permData = await permResponse.json()
+                activeTab.value = 'permissions'
+                // User may already be saved: switch to edit so a retry doesn't create it twice.
+                if (!isEdit.value) router.replace(`/user/form/${data.id}`)
+                throw new Error(permData.message || 'Usuário salvo, mas não foi possível salvar as permissões.')
+            }
+        }
+
+        // Editing yourself: reload your own permissions so menus/guards match right away.
+        if (data.id === auth.user?.id) await auth.refreshUser()
+
+        router.push('/user')
+    } catch (err) {
+        error.value = err.message
+    } finally {
+        saving.value = false
+    }
+}
+
+onMounted(() => Promise.all([fetchUser(), fetchCatalog()]))
+</script>
+
+<style scoped>
+.tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.tab:hover {
+    color: var(--color-text);
+}
+
+.tab.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+
+.tab__count {
+    min-width: 20px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    font-size: 0.7rem;
+    text-align: center;
+}
+
+.loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 48px 24px;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+}
+</style>
