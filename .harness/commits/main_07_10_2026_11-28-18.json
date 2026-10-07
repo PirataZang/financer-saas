@@ -1,0 +1,83 @@
+{
+  "branch": "main",
+  "created_at": "2026-10-07T14:28:18.567Z",
+  "author": {
+    "name": "Igor Fronza",
+    "email": "igorfronza20@gmail.com"
+  },
+  "parent": "a4ffb2f69f0c2019737adcb55699e0c840d016bd",
+  "notes": null,
+  "stats": {
+    "files": 11,
+    "additions": 375,
+    "deletions": 156
+  },
+  "files": [
+    {
+      "status": "M",
+      "path": "README.md",
+      "additions": 8,
+      "deletions": 4
+    },
+    {
+      "status": "M",
+      "path": "bot/Dockerfile",
+      "additions": 3,
+      "deletions": 1
+    },
+    {
+      "status": "A",
+      "path": "bot/src/card.test.ts",
+      "additions": 53,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "bot/src/card.ts",
+      "additions": 138,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "bot/src/flows/activation.ts",
+      "additions": 23,
+      "deletions": 24
+    },
+    {
+      "status": "M",
+      "path": "bot/src/flows/consult.ts",
+      "additions": 25,
+      "deletions": 15
+    },
+    {
+      "status": "M",
+      "path": "bot/src/flows/menu.ts",
+      "additions": 27,
+      "deletions": 25
+    },
+    {
+      "status": "M",
+      "path": "bot/src/flows/transaction.ts",
+      "additions": 66,
+      "deletions": 76
+    },
+    {
+      "status": "M",
+      "path": "bot/src/index.ts",
+      "additions": 14,
+      "deletions": 4
+    },
+    {
+      "status": "M",
+      "path": "bot/src/session.ts",
+      "additions": 10,
+      "deletions": 3
+    },
+    {
+      "status": "M",
+      "path": "design.md",
+      "additions": 8,
+      "deletions": 4
+    }
+  ]
+}

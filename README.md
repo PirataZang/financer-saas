@@ -77,11 +77,15 @@ BOT_API_TOKEN=               # segredo bot↔backend: openssl rand -hex 32
 ```
 
 `docker compose up -d --build bot backend`. No Telegram, mande qualquer mensagem (ou `/start`): na primeira vez
-o bot pede o código de ativação; depois mostra o menu **Lançamento / Consultar / Cancelar**.
-- **Lançamento**: Receita/Despesa → valor → descrição → categoria → confirmar. Aparece em
-  **Financeiro > Transações** com origem Telegram.
+o bot pede o código de ativação; depois abre o menu **Novo lançamento / Consultar**. Tudo acontece num **cartão
+único** que o bot edita a cada etapa (suas respostas digitadas são apagadas para o chat ficar limpo):
+- **Novo lançamento**: Receita/Despesa → valor → descrição → categoria → confirmar (com "← Voltar" em cada
+  etapa). Fica no chat só o comprovante, e a transação aparece em **Financeiro > Transações** com origem Telegram.
 - **Consultar**: escolha o período (este mês, mês passado, este ano, todo o período) e receba o balancete —
-  receitas e despesas por categoria, total arrecadado, total gasto, resultado líquido e saldo acumulado. Revogar um usuário:
+  receitas e despesas por categoria, total arrecadado, total gasto, resultado líquido e saldo acumulado.
+- `/cancelar` descarta o lançamento em andamento.
+
+Revogar um usuário:
 `docker compose exec backend php artisan tinker --execute='App\Models\TelegramAccount::where("telegram_user_id", ID)->update(["revoked_at" => now()]);'`
 
 Desenvolvimento fora do Docker (pare o container `bot` antes — o Telegram só aceita um polling por token): `cd bot && npm install && BACKEND_URL=http://localhost:8001/api npm run dev`.

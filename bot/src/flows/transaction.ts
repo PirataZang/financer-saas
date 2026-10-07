@@ -1,131 +1,121 @@
-import { Bot, InlineKeyboard } from 'grammy'
-import { backend, type CategoryOption, type TransactionType } from '../clients/backend.js'
+import { randomUUID } from 'node:crypto'
+import type { Bot } from 'grammy'
+import { type CardStep, detachCard, expired, isLiveCard, notice, receiptCard, showCard, transactionCard, typeCard, typing } from '../card.js'
+import { backend, type TransactionType } from '../clients/backend.js'
 import { config } from '../config.js'
 import { log } from '../log.js'
-import { formatMoney, parseMoney, todayIn } from '../money.js'
-import { type BotContext, type Draft, escapeHtml, resetSession } from '../session.js'
-import { showMenu } from './menu.js'
+import { parseMoney, todayIn } from '../money.js'
+import { type BotContext, resetSession } from '../session.js'
 
-// "Lançamento" wizard: type → amount → description → category → confirm. Only collects input; amounts and
-// categories are validated again by the backend, which owns every finance rule.
+// "Lançamento" wizard on the live card: type → 1 valor → 2 descrição → 3 categoria → 4 confirmar.
+// Only collects input; amounts and categories are validated again by the backend, which owns every
+// finance rule. Typed answers are deleted so the chat ends with just the receipt.
 
-const TYPE_LABEL: Record<TransactionType, string> = { income: '💰 Receita', expense: '💸 Despesa' }
-
-const typeMenu = new InlineKeyboard()
-  .text(TYPE_LABEL.income, 'new:income')
-  .text(TYPE_LABEL.expense, 'new:expense')
-  .row()
-  .text('❌ Cancelar', 'cancel')
-
-const cancelButton = new InlineKeyboard().text('❌ Cancelar', 'cancel')
-
-function categoryKeyboard(categories: CategoryOption[]): InlineKeyboard {
-  const keyboard = new InlineKeyboard()
-  categories.forEach((category, index) => {
-    keyboard.text(`${category.icon ?? ''} ${category.label}`.trim(), `cat:${category.value}`)
-    if (index % 2 === 1) keyboard.row()
-  })
-  return keyboard.row().text('❌ Cancelar', 'cancel')
-}
-
-function summary(draft: Draft): string {
-  return [
-    '<b>Confira os dados:</b>',
-    '',
-    `Tipo: ${draft.type ? TYPE_LABEL[draft.type] : ''}`,
-    `Valor: ${formatMoney(draft.amount ?? '0')}`,
-    `Categoria: ${escapeHtml(`${draft.category?.icon ?? ''} ${draft.category?.label ?? ''}`.trim())}`,
-    `Descrição: ${escapeHtml(draft.description ?? '')}`,
-  ].join('\n')
-}
+const render = (ctx: BotContext, note?: string) =>
+  showCard(ctx, transactionCard(ctx.session.draft, ctx.session.step as CardStep, todayIn(config.timezone), ctx.session.categories), { note })
 
 export function registerTransaction(bot: Bot<BotContext>): void {
   bot.callbackQuery('launch', async (ctx) => {
     await ctx.answerCallbackQuery()
+    // From the menu card: replace it. From a receipt/balancete (history): open a new card below.
+    if (!isLiveCard(ctx)) await detachCard(ctx)
     resetSession(ctx)
-    await ctx.reply('O que deseja lançar?', { reply_markup: typeMenu })
+    ctx.session.step = 'type'
+    await showCard(ctx, typeCard())
   })
 
   bot.callbackQuery(/^new:(income|expense)$/, async (ctx) => {
+    if (!isLiveCard(ctx) || ctx.session.step !== 'type') return expired(ctx)
     await ctx.answerCallbackQuery()
-    resetSession(ctx)
-    ctx.session.draft.type = ctx.match[1] as TransactionType
+    ctx.session.draft = { id: randomUUID(), type: ctx.match[1] as TransactionType }
     ctx.session.step = 'amount'
-    await ctx.reply(`${TYPE_LABEL[ctx.session.draft.type]}\n\nQual o valor? Ex.: <code>150,50</code>`, {
-      parse_mode: 'HTML',
-      reply_markup: cancelButton,
-    })
+    await render(ctx)
   })
 
   bot.filter((ctx) => ctx.session.step === 'amount').on('message:text', async (ctx) => {
+    await ctx.deleteMessage().catch(() => {})
     const amount = parseMoney(ctx.message.text)
-    if (!amount) {
-      await ctx.reply('Valor inválido. Envie algo como <code>150,50</code> ou <code>1.234,56</code>.', { parse_mode: 'HTML' })
-      return
-    }
+    if (!amount) return render(ctx, 'Não entendi esse valor. Envie no formato 150,50 ou 1.234,56.')
     ctx.session.draft.amount = amount
     ctx.session.step = 'description'
-    await ctx.reply(`Valor: ${formatMoney(amount)}\n\nDescrição da transação:`, { reply_markup: cancelButton })
+    await render(ctx)
   })
 
   bot.filter((ctx) => ctx.session.step === 'description').on('message:text', async (ctx) => {
+    await ctx.deleteMessage().catch(() => {})
     const description = ctx.message.text.trim()
-    if (!description || description.length > 255) {
-      await ctx.reply('Envie uma descrição de até 255 caracteres.')
-      return
-    }
+    if (!description || description.length > 255) return render(ctx, 'A descrição deve ter até 255 caracteres.')
 
-    const type = ctx.session.draft.type!
-    const categories = await backend.categories(ctx.from.id, type)
+    await typing(ctx)
+    const categories = await backend.categories(ctx.from.id, ctx.session.draft.type!)
     if (!categories.length) {
       resetSession(ctx)
-      await showMenu(ctx, 'Nenhuma categoria ativa para esse tipo. Cadastre em Financeiro > Categorias.\n\nO que deseja fazer?')
-      return
+      return showCard(ctx, notice('Não há categorias ativas para esse tipo de lançamento. Cadastre uma em <b>Financeiro › Categorias</b> e tente novamente.', true), { final: true })
     }
-
     ctx.session.draft.description = description
     ctx.session.categories = categories
     ctx.session.step = 'category'
-    await ctx.reply('Escolha uma categoria:', { reply_markup: categoryKeyboard(categories) })
+    await render(ctx)
   })
 
   bot.callbackQuery(/^cat:(\d+)$/, async (ctx) => {
-    const category = ctx.session.step === 'category' ? ctx.session.categories.find((c) => c.value === Number(ctx.match[1])) : undefined
-    if (!category) {
-      await ctx.answerCallbackQuery({ text: 'Esse menu expirou. Use /start.' })
-      return
-    }
+    const category = ctx.session.categories.find((c) => c.value === Number(ctx.match[1]))
+    if (!isLiveCard(ctx) || ctx.session.step !== 'category' || !category) return expired(ctx)
     await ctx.answerCallbackQuery()
     ctx.session.draft.category = category
     ctx.session.step = 'confirm'
-    await ctx.editMessageText(summary(ctx.session.draft), {
-      parse_mode: 'HTML',
-      reply_markup: new InlineKeyboard().text('✅ Confirmar', 'confirm').text('❌ Cancelar', 'cancel'),
-    })
+    await render(ctx)
+  })
+
+  // One step back, clearing what that step had filled.
+  bot.callbackQuery('back', async (ctx) => {
+    if (!isLiveCard(ctx)) return expired(ctx)
+    await ctx.answerCallbackQuery()
+    const { draft } = ctx.session
+    switch (ctx.session.step) {
+      case 'amount':
+        ctx.session.step = 'type'
+        return showCard(ctx, typeCard())
+      case 'description':
+        draft.amount = undefined
+        ctx.session.step = 'amount'
+        break
+      case 'category':
+        draft.description = undefined
+        ctx.session.step = 'description'
+        break
+      case 'confirm':
+        draft.category = undefined
+        ctx.session.step = 'category'
+        break
+      default:
+        return
+    }
+    await render(ctx)
   })
 
   bot.callbackQuery('confirm', async (ctx) => {
     const { draft } = ctx.session
-    if (ctx.session.step !== 'confirm' || !draft.type || !draft.amount || !draft.description || !draft.category) {
-      await ctx.answerCallbackQuery({ text: 'Nada para confirmar. Use /start.' })
-      return
+    if (!isLiveCard(ctx) || ctx.session.step !== 'confirm' || !draft.id || !draft.type || !draft.amount || !draft.description || !draft.category) {
+      return expired(ctx)
     }
     await ctx.answerCallbackQuery()
+    await typing(ctx)
 
-    // Same confirm message → same key: a retried/duplicated callback never creates a second entry.
+    const date = todayIn(config.timezone)
+    // draft.id is the idempotency key: a retried/duplicated confirm returns the same transaction.
     const transaction = await backend.createTransaction(ctx.from.id, {
       type: draft.type,
       amount: draft.amount,
       description: draft.description,
       category_id: draft.category.value,
-      date: todayIn(config.timezone),
-      idempotency_key: `${ctx.chat!.id}:${ctx.callbackQuery.message!.message_id}`,
+      date,
+      idempotency_key: draft.id,
     })
     log('transaction.created', { telegramUserId: ctx.from.id, transactionId: transaction.id })
 
-    const saved = summary(draft).replace('<b>Confira os dados:</b>', '<b>✅ Lançamento salvo!</b>')
+    const receipt = receiptCard(draft, transaction.id, date, ctx.from.first_name)
     resetSession(ctx)
-    await ctx.editMessageText(saved, { parse_mode: 'HTML' }).catch(() => {})
-    await showMenu(ctx, 'Algo mais?')
+    await showCard(ctx, receipt, { final: true })
   })
 }

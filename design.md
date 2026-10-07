@@ -241,11 +241,15 @@ banco**: só `/api/bot/*`.
   (tentativas de código), `bot-transactions` (teto de lançamentos/hora).
 - **Idempotência**: o bot envia `idempotency_key` = `chat:mensagem de confirmação`; o backend grava
   `external_id = "<telegram_user_id>:<key>"` — retry/clique duplo não duplica.
-- **Conversa**: qualquer mensagem fora de um fluxo abre o menu (`flows/menu.ts`: Lançamento / Consultar /
-  Cancelar). Consultar usa `GET /api/bot/finance/summary` — os mesmos agregados do dashboard web
+- **Conversa em cartão único**: cada tela é um `Card` (texto + botões) renderizado em `bot/src/card.ts`
+  (funções puras, testadas) e desenhado por `showCard`, que **edita** a mensagem viva em vez de mandar outra;
+  respostas digitadas são apagadas. Telas finais (comprovante, balancete, cancelado) ficam no histórico e o
+  próximo fluxo abre abaixo delas. Botão de mensagem antiga → "esta tela expirou". Tom cordial, trata pelo nome.
+  Qualquer mensagem fora de um fluxo abre o menu (`flows/menu.ts`: Novo lançamento / Consultar).
+- **Idempotência no bot**: cada rascunho tem um UUID (`draft.id`) enviado como `idempotency_key`. Consultar usa `GET /api/bot/finance/summary` — os mesmos agregados do dashboard web
   (`FinanceDashboardService`), formatados como balancete em `bot/src/balance.ts`.
-- **Novo fluxo no bot**: um arquivo em `bot/src/flows/` com sua função `register*`, registrado em `index.ts`
-  antes do `registerMenuFallback`, e um botão no menu principal. O bot só coleta e formata; regras e contas
+- **Novo fluxo no bot**: telas em `card.ts`, handlers num arquivo em `bot/src/flows/` com sua função
+  `register*`, registrado em `index.ts` antes do `registerMenuFallback`, e um botão no menu principal. O bot só coleta e formata; regras e contas
   financeiras ficam no backend.
 
 ## 13. Checklist antes de abrir PR

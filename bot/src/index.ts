@@ -46,10 +46,20 @@ try {
 if (config.telegramBotId && String(bot.botInfo.id) !== config.telegramBotId) {
   throw new Error(`TELEGRAM_BOT_TOKEN pertence ao bot ${bot.botInfo.id}, não a TELEGRAM_BOT_ID=${config.telegramBotId}.`)
 }
-await bot.api.setMyCommands([
-  { command: 'start', description: 'Menu: lançamento ou consulta' },
-  { command: 'cancelar', description: 'Cancelar a operação atual' },
-])
+// Bot profile: what people see in the empty chat before the first message, and the command list.
+await Promise.all([
+  bot.api.setMyCommands([
+    { command: 'start', description: 'Abrir o menu' },
+    { command: 'cancelar', description: 'Descartar o lançamento atual' },
+  ]),
+  bot.api.setMyShortDescription('Registre receitas e despesas e consulte seu balancete, direto pelo Telegram.'),
+  bot.api.setMyDescription(
+    'Seu assistente financeiro.\n\n'
+      + '• Registre receitas e despesas em poucos toques\n'
+      + '• Consulte o balancete do mês, do mês passado ou do ano\n\n'
+      + 'Os lançamentos vão direto para o sistema financeiro. Envie qualquer mensagem para começar.',
+  ),
+]).catch((error: Error) => log('profile.failed', { message: error.message }))
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) process.once(signal, () => void bot.stop().catch(() => {}))
 

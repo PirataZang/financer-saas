@@ -15,4 +15,6 @@ COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
 USER node
-CMD ["node", "dist/index.js"]
+# IPv4 only: the container has no IPv6 and Node's dual-stack race gives each attempt 250 ms, less than
+# the TCP handshake to api.telegram.org takes here → intermittent ETIMEDOUT on every Telegram call.
+CMD ["node", "--dns-result-order=ipv4first", "--no-network-family-autoselection", "dist/index.js"]
