@@ -19,15 +19,7 @@ class TransactionService
     {
         return Transaction::query()
             ->with('category:id,name,icon,color')
-            ->when($filters['from'] ?? null, fn ($q, $from) => $q->where('date', '>=', $from))
-            ->when($filters['to'] ?? null, fn ($q, $to) => $q->where('date', '<=', $to))
-            ->when($filters['type'] ?? null, fn ($q, $type) => $q->where('type', $type))
-            ->when($filters['category_id'] ?? null, fn ($q, $id) => $q->where('category_id', $id))
-            ->when($filters['source'] ?? null, fn ($q, $source) => $q->where('source', $source))
-            ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
-            ->when($filters['min_amount'] ?? null, fn ($q, $min) => $q->where('amount', '>=', $min))
-            ->when($filters['max_amount'] ?? null, fn ($q, $max) => $q->where('amount', '<=', $max))
-            ->when($filters['search'] ?? null, fn ($q, $search) => $q->whereLike('description', "%{$search}%"))
+            ->filtered($filters)
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->paginate($perPage);
@@ -93,6 +85,8 @@ class TransactionService
             'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
             'type' => ['nullable', Rule::enum(TransactionType::class)],
             'category_id' => ['nullable', 'integer'],
+            'category_ids' => ['nullable', 'array'],
+            'category_ids.*' => ['integer'],
             'source' => ['nullable', Rule::enum(TransactionSource::class)],
             'status' => ['nullable', Rule::enum(TransactionStatus::class)],
             'min_amount' => ['nullable', 'numeric', 'min:0'],

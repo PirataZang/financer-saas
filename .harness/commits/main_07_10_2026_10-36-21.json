@@ -1,0 +1,149 @@
+{
+  "branch": "main",
+  "created_at": "2026-10-07T13:36:21.965Z",
+  "author": {
+    "name": "Igor Fronza",
+    "email": "igorfronza20@gmail.com"
+  },
+  "parent": "6a812ed9069bdc074b10ec0befd4fbd5b7dbf994",
+  "notes": null,
+  "stats": {
+    "files": 22,
+    "additions": 1088,
+    "deletions": 278
+  },
+  "files": [
+    {
+      "status": "M",
+      "path": ".claude/skills/harness-creator/SKILL.md",
+      "additions": 19,
+      "deletions": 13
+    },
+    {
+      "status": "M",
+      "path": ".claude/skills/harness-creator/scripts/commit-log.mjs",
+      "additions": 96,
+      "deletions": 57
+    },
+    {
+      "status": "M",
+      "path": ".claude/skills/harness-creator/scripts/commit-log.test.mjs",
+      "additions": 93,
+      "deletions": 37
+    },
+    {
+      "status": "M",
+      "path": ".claude/skills/harness-creator/scripts/create-harness.mjs",
+      "additions": 2,
+      "deletions": 2
+    },
+    {
+      "status": "M",
+      "path": ".githooks/commit-log.mjs",
+      "additions": 96,
+      "deletions": 57
+    },
+    {
+      "status": "M",
+      "path": ".githooks/post-commit",
+      "additions": 1,
+      "deletions": 1
+    },
+    {
+      "status": "A",
+      "path": ".githooks/pre-commit",
+      "additions": 4,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": ".gitignore",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "README.md",
+      "additions": 5,
+      "deletions": 3
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Http/Controllers/TransactionController.php",
+      "additions": 22,
+      "deletions": 5
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Models/Transaction.php",
+      "additions": 20,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/FinanceDashboardService.php",
+      "additions": 45,
+      "deletions": 21
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/FinanceExportService.php",
+      "additions": 310,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/TransactionService.php",
+      "additions": 3,
+      "deletions": 9
+    },
+    {
+      "status": "M",
+      "path": "backend/composer.json",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/composer.lock",
+      "additions": 94,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "backend/config/permissions.php",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/routes/api.php",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/tests/Feature/FinanceTest.php",
+      "additions": 60,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "design.md",
+      "additions": 9,
+      "deletions": 2
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/finance/FinanceDashboard.vue",
+      "additions": 186,
+      "deletions": 39
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/finance/dashboardCharts.js",
+      "additions": 19,
+      "deletions": 30
+    }
+  ]
+}

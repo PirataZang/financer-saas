@@ -2,7 +2,8 @@ import { formatMoney } from '@/utils/money'
 
 // Finance dashboard charts. Each entry turns the /finance/dashboard payload into an ECharts
 // option (or null = "sem dados"). New chart = new entry here; FinanceDashboard.vue renders the list.
-//   { key, title, wide?, option(summary) }
+//   { key, title, wide?, height?(summary), option(summary) }
+// One question per chart: flow over time, balance over time, where money comes from, where it goes.
 
 const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 
@@ -49,14 +50,20 @@ const tooltip = (trigger = 'axis') => ({ trigger, valueFormatter: (v) => formatM
 
 const legend = (c) => ({ top: 0, left: 0, icon: 'roundRect', itemWidth: 12, itemHeight: 12, textStyle: { color: c.text } })
 
-// One series (a category ranking): bars in each category's own color, name on the axis.
+// One series (a category ranking): bars in each category's own color, name on the axis,
+// value + share of the type's total on the label — the ranking and the distribution in one view.
 const categoryBars = (list) => {
   if (!list?.length) return null
   const c = colors()
-  const top = list.slice(0, 10).reverse()
+  const total = list.reduce((sum, item) => sum + item.total, 0)
+  const share = (value) => `${((value / total) * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
+  const top = list.slice(0, 12).reverse()
   return {
-    grid: { left: 8, right: 72, top: 8, bottom: 8, containLabel: true },
-    tooltip: { trigger: 'item', valueFormatter: (v) => formatMoney(v) },
+    grid: { left: 8, right: 120, top: 8, bottom: 8, containLabel: true },
+    tooltip: {
+      trigger: 'item',
+      formatter: (p) => `${p.name}<br/><b>${formatMoney(p.value)}</b> · ${share(p.value)} · ${p.data.count} lançamento(s)`,
+    },
     xAxis: { type: 'value', show: false },
     yAxis: {
       type: 'category',
@@ -67,13 +74,16 @@ const categoryBars = (list) => {
     },
     series: [{
       type: 'bar',
-      data: top.map((item) => ({ value: item.total, itemStyle: { color: item.color } })),
+      data: top.map((item) => ({ value: item.total, count: item.count, itemStyle: { color: item.color } })),
       barMaxWidth: 18,
       itemStyle: { borderRadius: [0, 4, 4, 0] },
-      label: { show: true, position: 'right', color: c.text, formatter: (p) => formatMoney(p.value) },
+      label: { show: true, position: 'right', color: c.text, formatter: (p) => `${formatMoney(p.value)} · ${share(p.value)}` },
     }],
   }
 }
+
+// Ranked bars need room per category; the time charts keep the default height.
+const categoryHeight = (list) => `${Math.max(140, Math.min(list.length, 12) * 40 + 32)}px`
 
 export const charts = [
   {
@@ -107,7 +117,6 @@ export const charts = [
           name: 'Saldo',
           type: 'line',
           data: s.timeline.map((p) => p.balance),
-          smooth: 0.2,
           symbolSize: 8,
           showSymbol: s.timeline.length <= 31,
           lineStyle: { width: 2, color: c.balance },
@@ -118,26 +127,6 @@ export const charts = [
       }
     },
   },
-  { key: 'expense-categories', title: 'Despesas por categoria', option: (s) => categoryBars(s.categories.expense) },
-  { key: 'income-categories', title: 'Receitas por categoria', option: (s) => categoryBars(s.categories.income) },
-  {
-    key: 'expense-distribution',
-    title: 'Distribuição dos gastos',
-    option: (s) => {
-      if (!s.categories.expense.length) return null
-      const c = colors()
-      return {
-        tooltip: { trigger: 'item', formatter: (p) => `${p.name}<br/><b>${formatMoney(p.value)}</b> (${p.percent}%)` },
-        legend: { ...legend(c), type: 'scroll', orient: 'vertical', left: 'auto', right: 0, top: 'middle' },
-        series: [{
-          type: 'pie',
-          radius: ['52%', '78%'],
-          center: ['35%', '50%'],
-          itemStyle: { borderColor: c.surface, borderWidth: 2, borderRadius: 4 },
-          label: { show: false },
-          data: s.categories.expense.map((item) => ({ name: `${item.icon ?? ''} ${item.name}`.trim(), value: item.total, itemStyle: { color: item.color } })),
-        }],
-      }
-    },
-  },
+  { key: 'expense-categories', title: 'Despesas por categoria', height: (s) => categoryHeight(s.categories.expense), option: (s) => categoryBars(s.categories.expense) },
+  { key: 'income-categories', title: 'Receitas por categoria', height: (s) => categoryHeight(s.categories.income), option: (s) => categoryBars(s.categories.income) },
 ]

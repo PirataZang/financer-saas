@@ -28,7 +28,7 @@ Every useful coding-agent harness has five subsystems:
 | Verification | `init.sh` or documented commands | Tests/checks the agent must run before claiming done |
 | Scope | Feature dependencies and done criteria | Prevents overreach and half-finished work |
 | Lifecycle | `session-handoff.md`, end-of-session routine | Makes the next session restartable |
-| Commit log | `.githooks/post-commit` → `.harness/commits/*.json` | Exactly what each commit did, per branch |
+| Commit log | `.harness/commit-notes.md` + `.githooks/pre-commit` → `.harness/commits/*.json` | What each commit did, per branch, committed with it |
 
 ## First Move
 
@@ -58,23 +58,29 @@ Then explain what was created and how the user should replace placeholder featur
 
 ### Per-commit log (branch history)
 
-Every commit writes a new JSON file named `<branch>_<dd_mm_yyyy>_<HH-MM-SS>.json` (e.g.
-`main_07_10_2026_14-30-05.json`; `/` in branch names becomes `-`) to `.harness/commits/`, with: branch,
-hash, author, dates, message, every changed file (status, rename source, added/removed lines) and totals.
-On a branch other than the base (`init.defaultBranch`, `main`, `master`, `develop`) it also lists every
-commit the branch has since it diverged (`branch_history`). Use these files to answer "what was done on
-this branch" instead of guessing from chat history.
+Each commit carries its own record, written **before** the commit by a `pre-commit` hook and committed
+together with the code: `.harness/commits/<branch>_<dd_mm_yyyy>_<HH-MM-SS>.json` (e.g.
+`main_07_10_2026_14-30-05.json`; `/` in branch names becomes `-`). It holds: branch, author, timestamp,
+parent commit, the notes (below), every staged file (status, rename source, added/removed lines) and totals.
+Off the base branch (`init.defaultBranch`, `main`, `master`, `develop`) it also lists the commits the branch
+already has (`branch_history`). Use these files to answer "what was done on this branch" instead of guessing
+from chat history.
+
+**Before every commit, document what was done**: write 2–5 lines (what changed and why) to
+`.harness/commit-notes.md`. The hook copies it into the JSON as `notes` and clears the file after the commit
+succeeds. The draft itself is never committed.
 
 ```bash
 node skills/harness-creator/scripts/commit-log.mjs --install --target /path/to/project   # once per repo
 git config core.hooksPath .githooks                                                        # once per new clone
 ```
 
-The installer copies the script into the repo (`.githooks/commit-log.mjs`), so the hook doesn't depend on
-the skill being installed, and sets `core.hooksPath`. It never overwrites a foreign hook or hooks path
-without `--force`. A post-commit hook can't amend its own commit, so each JSON is committed together with
-the next commit; logs are excluded from their own file lists. The hook never blocks or fails a commit.
-Requires a git repository: if the target has none, say so and offer `git init`.
+The installer copies the script into the repo (`.githooks/commit-log.mjs`, so it doesn't depend on the skill)
+and sets `core.hooksPath`; it never overwrites a foreign hook or hooks path without `--force`.
+Constraints worth knowing: the commit hash and message don't exist yet when the hook runs (the JSON is inside
+the commit, so `git log -- <file>` links them); `--no-verify` and rebases skip it; plain merges get no log of
+their own — they bring in the branch's logs. The hook never blocks or fails a commit. Requires a git
+repository: if the target has none, say so and offer `git init`.
 
 ### Audit an existing harness
 
@@ -128,7 +134,7 @@ For a usable minimal harness, leave the target project with:
 - [ ] `progress.md`
 - [ ] `init.sh`
 - [ ] Optional `session-handoff.md` for multi-session work
-- [ ] `.githooks/post-commit` with `core.hooksPath=.githooks` (git repos), writing `.harness/commits/*.json`
+- [ ] `.githooks/pre-commit` + `post-commit` with `core.hooksPath=.githooks` (git repos), writing `.harness/commits/*.json`
 - [ ] Documented verification evidence or next action
 
 If you cannot create files, provide exact file contents and commands instead.

@@ -62,6 +62,7 @@ Route::middleware(['auth', 'permission'])->group(function () {
 
     Route::prefix('finance')->group(function () {
         Route::get('/dashboard', [TransactionController::class, 'dashboard']);
+        Route::get('/dashboard/export', [TransactionController::class, 'export']);
 
         Route::prefix('categories')->group(function () {
             Route::get('/', [CategoryController::class, 'list']);

@@ -7,15 +7,18 @@ use App\Enums\TransactionSource;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Service\FinanceDashboardService;
+use App\Service\FinanceExportService;
 use App\Service\TransactionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class TransactionController extends Controller
 {
     public function __construct(
         protected TransactionService $transactionService,
         protected FinanceDashboardService $dashboardService,
+        protected FinanceExportService $exportService,
     ) {
     }
 
@@ -75,19 +78,33 @@ class TransactionController extends Controller
     }
 
     /**
-     * Dashboard aggregates for a period (defaults to the current month).
+     * Dashboard aggregates for a period (defaults to the current month) and filters
+     * (category_ids[], source, status = paid (default) | pending | all).
      */
     #[Permission('finance.dashboard')]
     public function dashboard(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'from' => ['nullable', 'date_format:Y-m-d'],
-            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
-        ]);
+        $validated = $request->validate($this->dashboardService->rules());
 
         return response()->json($this->dashboardService->summary(
             $validated['from'] ?? now()->startOfMonth()->toDateString(),
             $validated['to'] ?? now()->toDateString(),
+            $validated,
         ));
+    }
+
+    /**
+     * The dashboard's data as an Excel workbook (Resumo with formulas, Mensal, Transações, Categorias).
+     */
+    #[Permission('finance.export')]
+    public function export(Request $request): BinaryFileResponse
+    {
+        $validated = $request->validate($this->dashboardService->rules());
+        $from = $validated['from'] ?? now()->startOfMonth()->toDateString();
+        $to = $validated['to'] ?? now()->toDateString();
+
+        return response()
+            ->download($this->exportService->export($from, $to, $validated), "financeiro_{$from}_a_{$to}.xlsx")
+            ->deleteFileAfterSend();
     }
 }

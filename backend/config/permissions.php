@@ -36,6 +36,7 @@ return [
         'name' => 'Financeiro',
         'actions' => [
             'dashboard' => 'Visualizar o dashboard financeiro',
+            'export' => 'Exportar dados financeiros (Excel)',
             'category.view' => 'Visualizar categorias financeiras',
             'category.create' => 'Cadastrar categorias financeiras',
             'category.update' => 'Editar categorias financeiras',

@@ -215,8 +215,15 @@ todos por `TransactionService::create($data, TransactionSource, ?externalId)`.
 - **Enums**: `TransactionType`, `TransactionStatus`, `TransactionSource`, `CategoryType` — nova origem
   (ex. CSV) = novo case em `TransactionSource` + um ponto de entrada que chame o `TransactionService`.
 - **API**: `/api/finance/{dashboard,categories,transactions}` com `#[Permission('finance.*')]`.
-- **Telas**: `pages/finance/` — `FinanceDashboard` (gráficos em `dashboardCharts.js`: novo gráfico = nova
-  entrada no array), `CategoryList` (cards) / `CategoryForm`, `TransactionList` / `TransactionForm`.
+- **Filtros**: um vocabulário só, `Transaction::scopeFiltered()` (from, to, type, category_id, category_ids[],
+  source, status, min/max_amount, search) — usado pela listagem, pelo dashboard e pela exportação. No dashboard,
+  `status` = `paid` (padrão) | `pending` | `all`, e os filtros valem também para o saldo anterior.
+- **Exportação Excel**: `GET /api/finance/dashboard/export` (permissão `finance.export`, mesmos filtros do
+  dashboard) → `FinanceExportService` (OpenSpout): abas Resumo (balancete 100% em fórmulas SOMASES sobre
+  Transações), Mensal (receitas/despesas/resultado/saldo acumulado por mês, fórmulas), Transações (dados, cabeçalho
+  fixo, autofiltro) e Categorias. Texto do usuário entra sempre como `StringCell` — nunca vira fórmula.
+- **Telas**: `pages/finance/` — `FinanceDashboard` (filtros de período/categorias/origem/status + exportar;
+  gráficos em `dashboardCharts.js`, uma pergunta por gráfico: novo gráfico = nova entrada no array), `CategoryList` (cards) / `CategoryForm`, `TransactionList` / `TransactionForm`.
   Presets de período em `utils/period.js`.
 
 ## 12. Bot do Telegram (`bot/`)

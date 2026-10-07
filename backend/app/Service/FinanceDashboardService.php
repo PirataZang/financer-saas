@@ -2,35 +2,69 @@
 
 namespace App\Service;
 
+use App\Enums\TransactionSource;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Models\Transaction;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonPeriod;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\Rule;
 
 /**
- * Aggregates for the finance dashboard. Only `paid` transactions count: pending ones haven't
- * moved money yet. Every chart on the frontend derives from this one payload.
+ * Aggregates for the finance dashboard, the bot's balancete and the Excel export. By default only
+ * `paid` transactions count (pending ones haven't moved money yet); `status=all|pending` and the
+ * category/source filters narrow every figure the same way, opening balance included.
  */
 class FinanceDashboardService
 {
     /** Longer ranges are bucketed by month so a yearly chart isn't 365 bars. */
     private const MAX_DAILY_BUCKETS = 62;
 
-    /**
-     * $from null = everything up to $to (from the first paid transaction).
-     */
-    public function summary(?string $from, string $to): array
+    public function rules(): array
     {
-        $from ??= $this->paid()->min('date') ?? $to;
+        return [
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+            'category_ids' => ['nullable', 'array'],
+            'category_ids.*' => ['integer'],
+            'source' => ['nullable', Rule::enum(TransactionSource::class)],
+            'status' => ['nullable', Rule::in([...array_column(TransactionStatus::cases(), 'value'), 'all'])],
+        ];
+    }
+
+    /**
+     * Dashboard filters → Transaction::filtered() keys. Status defaults to paid; "all" drops it.
+     */
+    public function scope(array $filters): array
+    {
+        $status = $filters['status'] ?? TransactionStatus::Paid->value;
+
+        return [
+            'category_ids' => $filters['category_ids'] ?? null,
+            'source' => $filters['source'] ?? null,
+            'status' => $status === 'all' ? null : $status,
+        ];
+    }
+
+    /**
+     * $from null = everything up to $to (from the first matching transaction).
+     */
+    public function summary(?string $from, string $to, array $filters = []): array
+    {
+        $scope = $this->scope($filters);
+        $base = fn () => Transaction::query()->filtered($scope);
+
+        $from ??= $base()->min('date') ?? $to;
         $from = min($from, $to);
         $start = CarbonImmutable::parse($from);
         $end = CarbonImmutable::parse($to);
         $monthly = $start->diffInDays($end) + 1 > self::MAX_DAILY_BUCKETS;
         $bucketOf = fn (string $date) => $monthly ? substr($date, 0, 7) : substr($date, 0, 10);
+        $inPeriod = fn () => $base()->whereBetween('date', [$from, $to]);
 
-        $opening = $this->totalsByType($this->paid()->where('date', '<', $from));
+        $opening = $this->totalsByType($base()->where('date', '<', $from));
         $openingBalance = $opening[TransactionType::Income->value] - $opening[TransactionType::Expense->value];
 
         $buckets = [];
@@ -38,7 +72,7 @@ class FinanceDashboardService
             $buckets[$bucketOf($day->toDateString())] = ['income' => 0.0, 'expense' => 0.0];
         }
 
-        $rows = $this->inPeriod($from, $to)
+        $rows = $inPeriod()
             ->select('date', 'type')
             ->selectRaw('SUM(amount) as total')
             ->groupBy('date', 'type')
@@ -60,8 +94,8 @@ class FinanceDashboardService
             ];
         }
 
-        $totals = $this->totalsByType($this->inPeriod($from, $to));
-        $categories = $this->byCategory($from, $to);
+        $totals = $this->totalsByType($inPeriod());
+        $categories = $this->byCategory($inPeriod);
 
         return [
             'period' => ['from' => $from, 'to' => $to, 'granularity' => $monthly ? 'month' : 'day'],
@@ -76,16 +110,6 @@ class FinanceDashboardService
             'timeline' => $timeline,
             'categories' => $categories,
         ];
-    }
-
-    private function paid(): Builder
-    {
-        return Transaction::query()->where('status', TransactionStatus::Paid);
-    }
-
-    private function inPeriod(string $from, string $to): Builder
-    {
-        return $this->paid()->whereBetween('date', [$from, $to]);
     }
 
     /**
@@ -104,9 +128,9 @@ class FinanceDashboardService
     /**
      * @return array{income: list<array>, expense: list<array>}
      */
-    private function byCategory(string $from, string $to): array
+    private function byCategory(Closure $inPeriod): array
     {
-        $rows = $this->inPeriod($from, $to)
+        $rows = $inPeriod()
             ->select('category_id', 'type')
             ->selectRaw('SUM(amount) as total, COUNT(*) as count')
             ->groupBy('category_id', 'type')

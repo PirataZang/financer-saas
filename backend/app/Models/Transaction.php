@@ -7,6 +7,7 @@ use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -36,6 +37,25 @@ class Transaction extends Model
             'source' => TransactionSource::class,
             'amount' => 'decimal:2',
         ];
+    }
+
+    /**
+     * Single filter vocabulary for the list, the dashboard and the export (all keys optional):
+     * from, to, type, category_id, category_ids[], source, status, min_amount, max_amount, search.
+     */
+    public function scopeFiltered(Builder $query, array $filters): void
+    {
+        $query
+            ->when($filters['from'] ?? null, fn ($q, $from) => $q->where('date', '>=', $from))
+            ->when($filters['to'] ?? null, fn ($q, $to) => $q->where('date', '<=', $to))
+            ->when($filters['type'] ?? null, fn ($q, $type) => $q->where('type', $type))
+            ->when($filters['category_id'] ?? null, fn ($q, $id) => $q->where('category_id', $id))
+            ->when($filters['category_ids'] ?? null, fn ($q, $ids) => $q->whereIn('category_id', $ids))
+            ->when($filters['source'] ?? null, fn ($q, $source) => $q->where('source', $source))
+            ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
+            ->when($filters['min_amount'] ?? null, fn ($q, $min) => $q->where('amount', '>=', $min))
+            ->when($filters['max_amount'] ?? null, fn ($q, $max) => $q->where('amount', '<=', $max))
+            ->when($filters['search'] ?? null, fn ($q, $search) => $q->whereLike('description', "%{$search}%"));
     }
 
     /** Soft-deleted categories still label their old transactions. */

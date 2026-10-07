@@ -1,20 +1,29 @@
 #!/usr/bin/env node
-// Per-commit change log: every commit writes .harness/commits/<branch>_<dd_mm_yyyy>_<HH-MM-SS>.json
-// describing exactly what that commit did on that branch (and, off the base branch, every commit
-// the branch has so far). Self-contained on purpose: --install copies this file into the repo's
-// .githooks/, so the hook works in every clone without the skill installed.
+// Per-commit change log, written BEFORE the commit and included IN it: the pre-commit hook writes
+// .harness/commits/<branch>_<dd_mm_yyyy>_<HH-MM-SS>.json (what is being committed on this branch,
+// plus the free-text notes from .harness/commit-notes.md) and stages it. Hash and message don't
+// exist yet at that point — the JSON lives inside its own commit, so `git log -- <file>` links them.
+// Self-contained on purpose: --install copies this file into the repo's .githooks/.
 //
-//   node commit-log.mjs --install [--target DIR] [--force]   install the post-commit hook
-//   node commit-log.mjs                                      log HEAD (what the hook runs)
+//   node commit-log.mjs --install [--target DIR] [--force]   install the hooks
+//   node commit-log.mjs                                      pre-commit: write + stage the log
+//   node commit-log.mjs --after-commit                       post-commit: clear notes, resync index
 import { execFileSync } from 'node:child_process';
-import { chmodSync, copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HOOKS_DIR = '.githooks';
-const LOG_DIR = path.join('.harness', 'commits');
+const LOG_DIR = '.harness/commits';
+const NOTES_FILE = '.harness/commit-notes.md';
 const MARKER = '# harness-creator:commit-log';
+const HOOKS = {
+  'pre-commit': '',
+  // Partial commits (`git commit <paths>`) stage the log in a temporary index; re-add it to the real one.
+  'post-commit': ' --after-commit',
+};
 
+// Inherits GIT_INDEX_FILE from the hook, so partial/`-a` commits see their own index.
 const git = (cwd, ...args) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trimEnd();
 const tryGit = (cwd, ...args) => {
   try {
@@ -35,18 +44,24 @@ export function install(target, { force = false } = {}) {
     return { status: 'skipped', reason: `core.hooksPath is already "${hooksPath}" (use --force to switch to ${HOOKS_DIR})` };
   }
 
-  const hookFile = path.join(root, HOOKS_DIR, 'post-commit');
-  if (existsSync(hookFile) && !readFileSync(hookFile, 'utf8').includes(MARKER) && !force) {
-    return { status: 'skipped', reason: `${HOOKS_DIR}/post-commit exists and is not ours (use --force)` };
+  const foreign = Object.keys(HOOKS).filter((name) => {
+    const file = path.join(root, HOOKS_DIR, name);
+    return existsSync(file) && !readFileSync(file, 'utf8').includes(MARKER);
+  });
+  if (foreign.length && !force) {
+    return { status: 'skipped', reason: `${foreign.map((n) => `${HOOKS_DIR}/${n}`).join(', ')} exists and is not ours (use --force)` };
   }
 
-  mkdirSync(path.dirname(hookFile), { recursive: true });
+  mkdirSync(path.join(root, HOOKS_DIR), { recursive: true });
   copyFileSync(fileURLToPath(import.meta.url), path.join(root, HOOKS_DIR, 'commit-log.mjs'));
-  writeFileSync(hookFile, `#!/bin/sh\n${MARKER}\n# Never blocks a commit: the script swallows its own errors.\nnode "$(git rev-parse --show-toplevel)/${HOOKS_DIR}/commit-log.mjs" || true\n`);
-  chmodSync(hookFile, 0o755);
+  for (const [name, flag] of Object.entries(HOOKS)) {
+    const file = path.join(root, HOOKS_DIR, name);
+    writeFileSync(file, `#!/bin/sh\n${MARKER}\n# Never blocks a commit: the script swallows its own errors.\nnode "$(git rev-parse --show-toplevel)/${HOOKS_DIR}/commit-log.mjs"${flag} || true\n`);
+    chmodSync(file, 0o755);
+  }
   git(root, 'config', 'core.hooksPath', HOOKS_DIR);
 
-  return { status: 'written', path: hookFile };
+  return { status: 'written', path: path.join(root, HOOKS_DIR, 'pre-commit') };
 }
 
 // ---------- log ----------
@@ -89,6 +104,12 @@ export function parseChanges(nameStatusZ, numstatZ) {
   return files;
 }
 
+/** "Name <email> 1759845005 -0300" (git var GIT_AUTHOR_IDENT) → { name, email } */
+function parseIdent(ident) {
+  const match = /^(.*) <(.*)> \d+ [+-]\d{4}$/.exec(ident ?? '');
+  return match ? { name: match[1], email: match[2] } : null;
+}
+
 function baseBranch(root, current) {
   const configured = tryGit(root, 'config', '--get', 'init.defaultBranch');
   return [configured, 'main', 'master', 'develop'].find(
@@ -96,37 +117,31 @@ function baseBranch(root, current) {
   );
 }
 
-export function buildLog(root) {
-  const hash = git(root, 'rev-parse', 'HEAD');
-  const [parents, authorName, authorEmail, authorDate, committerDate, subject] = git(
-    root, 'show', '-s', '--format=%P%x00%an%x00%ae%x00%aI%x00%cI%x00%s', hash,
-  ).split('\0');
-  const body = git(root, 'show', '-s', '--format=%b', hash).trim();
-  const branch = tryGit(root, 'rev-parse', '--abbrev-ref', 'HEAD');
-
-  // First parent (merges: what the merge brought into this branch); root commit: the empty tree.
-  const parentList = parents ? parents.split(' ') : [];
-  const from = parentList[0] ?? git(root, 'hash-object', '-t', 'tree', '/dev/null');
-  // The logs themselves get committed with the next commit; they're not "what was done".
-  const notLogs = ['--', '.', `:(exclude)${LOG_DIR.split(path.sep).join('/')}`];
+/** What the commit about to be made contains (the staged index vs HEAD). */
+export function buildLog(root, now = new Date()) {
+  const head = tryGit(root, 'rev-parse', '--verify', '--quiet', 'HEAD');
+  const branch = tryGit(root, 'symbolic-ref', '--quiet', '--short', 'HEAD');
+  const from = head ?? git(root, 'hash-object', '-t', 'tree', '/dev/null'); // first commit: vs empty tree
+  // The logs themselves are bookkeeping, not "what was done".
+  const notLogs = ['--', '.', `:(exclude)${LOG_DIR}`, `:(exclude)${NOTES_FILE}`];
   const files = parseChanges(
-    git(root, 'diff', '--name-status', '-z', '-M', from, hash, ...notLogs),
-    git(root, 'diff', '--numstat', '-z', '-M', from, hash, ...notLogs),
+    git(root, 'diff', '--cached', '--name-status', '-z', '-M', from, ...notLogs),
+    git(root, 'diff', '--cached', '--numstat', '-z', '-M', from, ...notLogs),
   );
 
+  const notesPath = path.join(root, NOTES_FILE);
+  const notes = existsSync(notesPath) ? readFileSync(notesPath, 'utf8').trim() : '';
+
   const log = {
-    branch: branch === 'HEAD' ? null : branch,
-    commit: {
-      hash,
-      short: hash.slice(0, 7),
-      parents: parentList,
-      merge: parentList.length > 1,
-      author: { name: authorName, email: authorEmail },
-      authored_at: authorDate,
-      committed_at: committerDate,
-      subject,
-      body,
-    },
+    branch,
+    created_at: now.toISOString(),
+    author: parseIdent(tryGit(root, 'var', 'GIT_AUTHOR_IDENT')),
+    parent: head,
+    // Conflict-resolution commit of a merge (plain merges don't run pre-commit).
+    ...(existsSync(path.join(git(root, 'rev-parse', '--git-dir'), 'MERGE_HEAD'))
+      ? { merging: git(root, 'rev-parse', 'MERGE_HEAD') }
+      : {}),
+    notes: notes || null,
     stats: {
       files: files.length,
       additions: files.reduce((sum, f) => sum + (f.additions ?? 0), 0),
@@ -135,35 +150,58 @@ export function buildLog(root) {
     files,
   };
 
-  // Off the base branch: everything this branch has done so far, newest first.
-  const base = branch && branch !== 'HEAD' ? baseBranch(root, branch) : null;
-  const mergeBase = base && tryGit(root, 'merge-base', base, hash);
+  // Off the base branch: the commits this branch already has (newest first); this one comes next.
+  const base = branch ? baseBranch(root, branch) : null;
+  const mergeBase = base && head && tryGit(root, 'merge-base', base, head);
   if (mergeBase) {
-    const commits = git(root, 'log', '--format=%H%x00%s%x00%cI', `${mergeBase}..${hash}`)
+    const commits = git(root, 'log', '--format=%H%x00%s%x00%cI', `${mergeBase}..${head}`)
       .split('\n')
       .filter(Boolean)
       .map((line) => {
-        const [h, s, d] = line.split('\0');
-        return { hash: h, subject: s, committed_at: d };
+        const [hash, subject, committedAt] = line.split('\0');
+        return { hash, subject, committed_at: committedAt };
       });
-    log.branch_history = { base, merge_base: mergeBase, commits };
+    log.branch_history = { base, merge_base: mergeBase, previous_commits: commits };
   }
 
   return log;
 }
 
-export function writeLog(root) {
-  const log = buildLog(root);
+/** pre-commit: write the log and stage it into the commit being made. */
+export function writeLog(root, now = new Date()) {
+  // A log staged by an aborted commit (empty message, failed hook) would ride along twice.
+  const stale = git(root, 'diff', '--cached', '--name-only', '--diff-filter=A', '-z',
+    ...(tryGit(root, 'rev-parse', '--verify', '--quiet', 'HEAD') ? ['HEAD'] : []), '--', LOG_DIR)
+    .split('\0').filter(Boolean);
+  for (const file of stale) {
+    git(root, 'rm', '--cached', '--quiet', '--', file);
+    rmSync(path.join(root, file), { force: true });
+  }
+
+  // The notes go into the JSON; the draft file itself never gets committed (e.g. after `git add -A`).
+  git(root, 'rm', '--cached', '--quiet', '--ignore-unmatch', '--', NOTES_FILE);
+
+  const log = buildLog(root, now);
   const dir = path.join(root, LOG_DIR);
   mkdirSync(dir, { recursive: true });
 
-  const stem = fileStem(log.branch, new Date(log.commit.committed_at));
-  // Same second (rebase, quick amend): keep both, tell them apart by hash.
+  const stem = fileStem(log.branch, now);
   let file = path.join(dir, `${stem}.json`);
-  if (existsSync(file)) file = path.join(dir, `${stem}_${log.commit.short}.json`);
+  for (let n = 2; existsSync(file); n += 1) file = path.join(dir, `${stem}_${n}.json`); // same second
 
   writeFileSync(file, `${JSON.stringify(log, null, 2)}\n`);
+  git(root, 'add', '--', path.relative(root, file));
   return file;
+}
+
+/** post-commit: notes were consumed; partial commits left the log out of the real index. */
+export function afterCommit(root) {
+  const committed = git(root, 'diff-tree', '--no-commit-id', '--name-only', '-r', '-z', '--root', 'HEAD', '--', LOG_DIR)
+    .split('\0').filter(Boolean);
+  // No log in this commit (--no-verify, rebase): the notes weren't used, keep them for the next one.
+  if (!committed.length) return;
+  git(root, 'add', '--', ...committed);
+  rmSync(path.join(root, NOTES_FILE), { force: true });
 }
 
 // ---------- cli ----------
@@ -171,16 +209,17 @@ export function writeLog(root) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   if (args.includes('--help')) {
-    console.log('Usage: node commit-log.mjs [--install [--target DIR] [--force]]');
+    console.log('Usage: node commit-log.mjs [--install [--target DIR] [--force] | --after-commit]');
   } else if (args.includes('--install')) {
     const targetIndex = args.indexOf('--target');
     const target = path.resolve(targetIndex >= 0 ? args[targetIndex + 1] : process.cwd());
     const result = install(target, { force: args.includes('--force') });
-    console.log(result.status === 'written' ? `WRITTEN ${result.path} (core.hooksPath=${HOOKS_DIR})` : `SKIPPED commit log hook (${result.reason})`);
+    console.log(result.status === 'written' ? `WRITTEN ${HOOKS_DIR}/pre-commit + post-commit (core.hooksPath=${HOOKS_DIR})` : `SKIPPED commit log hooks (${result.reason})`);
   } else {
     try {
       const root = git(process.cwd(), 'rev-parse', '--show-toplevel');
-      console.log(`commit log: ${path.relative(root, writeLog(root))}`);
+      if (args.includes('--after-commit')) afterCommit(root);
+      else console.log(`commit log: ${path.relative(root, writeLog(root))}`);
     } catch (error) {
       // A log failure must never look like a failed commit.
       console.error(`commit log skipped: ${error.message}`);

@@ -24,7 +24,7 @@ Creates a minimal production harness:
   progress.md
   session-handoff.md
   init.sh
-  .githooks/post-commit  (per-commit JSON log in .harness/commits/; git repos only, --no-commit-log to skip)
+  .githooks/pre-commit  (per-commit JSON log in .harness/commits/, committed with it; git repos only, --no-commit-log to skip)
 
 Existing files are skipped unless --force is set.`);
   process.exit(0);
@@ -67,7 +67,7 @@ if (force || !await exists(initPath)) {
 
 if (!args.noCommitLog) {
   const hook = installCommitLog(target, { force });
-  results.push({ path: hook.path || path.join(target, '.githooks', 'post-commit'), status: hook.status, reason: hook.reason });
+  results.push({ path: hook.path || path.join(target, '.githooks', 'pre-commit'), status: hook.status, reason: hook.reason });
 }
 
 console.log(`Created harness for ${target}`);

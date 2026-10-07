@@ -14,7 +14,7 @@ class FinanceTest extends TestCase
     use RefreshDatabase;
 
     private const ALL = [
-        'finance.dashboard',
+        'finance.dashboard', 'finance.export',
         'finance.category.view', 'finance.category.create', 'finance.category.update', 'finance.category.delete',
         'finance.transaction.view', 'finance.transaction.create', 'finance.transaction.update', 'finance.transaction.delete',
     ];
@@ -174,6 +174,65 @@ class FinanceTest extends TestCase
         $this->assertCount(12, $yearly['timeline']);
         $this->assertSame(['2026-09', '2026-10'], [$yearly['timeline'][8]['period'], $yearly['timeline'][9]['period']]);
         $this->assertEquals([100, 850.05], [$yearly['timeline'][8]['balance'], $yearly['timeline'][9]['balance']]);
+    }
+
+    public function test_dashboard_filters_by_category_source_and_status(): void
+    {
+        $headers = $this->headers(['finance.dashboard']);
+        $market = $this->category(['type' => 'expense']);
+        $food = $this->category(['type' => 'expense']);
+        $tx = fn (array $data) => Transaction::create(['type' => 'expense', 'description' => 'x', 'date' => '2026-10-02', ...$data]);
+        $tx(['amount' => '10.00', 'category_id' => $market->id, 'date' => '2026-09-01']); // opening, market
+        $tx(['amount' => '20.00', 'category_id' => $market->id]);
+        $tx(['amount' => '30.00', 'category_id' => $food->id, 'source' => 'telegram']);
+        $tx(['amount' => '40.00', 'category_id' => $food->id, 'status' => 'pending']);
+
+        $expense = fn (string $query) => $this->getJson("/api/finance/dashboard?from=2026-10-01&to=2026-10-31&{$query}", $headers)
+            ->assertOk()->json();
+
+        $this->assertEquals(50, $expense('')['totals']['expense']); // paid only by default
+        $this->assertEquals(90, $expense('status=all')['totals']['expense']);
+        $this->assertEquals(40, $expense('status=pending')['totals']['expense']);
+        $this->assertEquals(30, $expense('source=telegram')['totals']['expense']);
+        $marketOnly = $expense("category_ids[]={$market->id}");
+        $this->assertEquals([20, -10], [$marketOnly['totals']['expense'], $marketOnly['opening_balance']]);
+        $this->assertEquals(70, $expense("status=all&category_ids[]={$food->id}")['totals']['expense']);
+        $this->getJson('/api/finance/dashboard?status=lost', $headers)->assertUnprocessable();
+    }
+
+    public function test_export_is_an_xlsx_whose_summary_is_formulas_and_keeps_text_as_text(): void
+    {
+        $headers = $this->headers();
+        $salary = $this->category(['name' => 'Salário', 'type' => 'income']);
+        $market = $this->category(['name' => 'Mercado', 'type' => 'expense']);
+        Transaction::create(['type' => 'income', 'amount' => '1000.00', 'description' => 'Pagamento', 'category_id' => $salary->id, 'date' => '2026-10-01']);
+        Transaction::create(['type' => 'expense', 'amount' => '150.50', 'description' => '=HYPERLINK("http://evil","x")', 'category_id' => $market->id, 'date' => '2026-10-02']);
+
+        $response = $this->get('/api/finance/dashboard/export?from=2026-10-01&to=2026-10-31', $headers)->assertOk();
+        $this->assertStringContainsString('financeiro_2026-10-01_a_2026-10-31.xlsx', $response->headers->get('content-disposition'));
+
+        $file = $response->baseResponse->getFile()->getPathname();
+        $zip = new \ZipArchive();
+        $this->assertTrue($zip->open($file) === true);
+        $workbook = $zip->getFromName('xl/workbook.xml');
+        foreach (['Resumo', 'Mensal', 'Transações', 'Categorias'] as $name) {
+            $this->assertStringContainsString("name=\"{$name}\"", $workbook);
+        }
+
+        $summary = $zip->getFromName('xl/worksheets/sheet1.xml');
+        $this->assertStringContainsString("<f>SUMIFS('Transações'!\$F:\$F,'Transações'!\$B:\$B,\"Receita\"", html_entity_decode($summary, ENT_QUOTES | ENT_XML1));
+        $this->assertMatchesRegularExpression('/<f>SUMIFS\(/', $summary);
+        $this->assertMatchesRegularExpression('/<f>B\d+-B\d+<\/f>/', $summary); // resultado líquido
+
+        $transactions = $zip->getFromName('xl/worksheets/sheet3.xml');
+        $this->assertStringNotContainsString('<f>HYPERLINK', $transactions);
+        $this->assertStringContainsString('HYPERLINK', $transactions.$zip->getFromName('xl/sharedStrings.xml'));
+        $zip->close();
+    }
+
+    public function test_export_requires_its_own_permission(): void
+    {
+        $this->get('/api/finance/dashboard/export', $this->headers(['finance.dashboard']))->assertForbidden();
     }
 
     public function test_each_operation_requires_its_permission(): void

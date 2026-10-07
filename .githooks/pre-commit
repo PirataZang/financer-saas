@@ -1,0 +1,4 @@
+#!/bin/sh
+# harness-creator:commit-log
+# Never blocks a commit: the script swallows its own errors.
+node "$(git rev-parse --show-toplevel)/.githooks/commit-log.mjs" || true

@@ -94,9 +94,11 @@ redes privadas). Na VPS, publique o backend só para o Nginx: `"127.0.0.1:${BACK
 
 ## Log de commits
 
-Cada commit gera `.harness/commits/<branch>_<dd_mm_yyyy>_<HH-MM-SS>.json` com o que aquele commit fez
-(arquivos, linhas, mensagem, autor) e, fora da `main`, todos os commits da branch. O hook vem versionado em
-`.githooks/`; num clone novo, ative uma vez: `git config core.hooksPath .githooks`. (Skill: `.claude/skills/harness-creator`.)
+Antes de commitar, descreva o que foi feito em `.harness/commit-notes.md` (opcional, 2–5 linhas). O hook
+`pre-commit` gera `.harness/commits/<branch>_<dd_mm_yyyy>_<HH-MM-SS>.json` — arquivos alterados, linhas,
+autor, branch, essas notas e, fora da `main`, os commits anteriores da branch — e o inclui **no mesmo commit**.
+Hooks versionados em `.githooks/`; num clone novo, ative uma vez: `git config core.hooksPath .githooks`.
+(Skill: `.claude/skills/harness-creator`.)
 
 ## Testes
 
