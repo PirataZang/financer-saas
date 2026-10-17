@@ -8,16 +8,22 @@ export function can(user, permission) {
   return !!user.master || (user.permissions || []).includes(permission)
 }
 
-// A route is accessible when every matched record's meta.permission is granted.
+// meta.master: restricted area (companies). Masters only — not a permission key, so it
+// can't be granted. Mirrors the API's `master` middleware.
+function allowed(user, meta = {}) {
+  return (!meta.master || !!user?.master) && can(user, meta.permission)
+}
+
+// A route is accessible when every matched record is allowed.
 export function canAccessRoute(user, route) {
-  return (route.matched || [route]).every((record) => can(user, record.meta?.permission))
+  return (route.matched || [route]).every((record) => allowed(user, record.meta))
 }
 
 // Menu entries come from route meta (single source: path + permission + menu info).
 // meta.menu = { label, icon, description?, keywords?, module?, order?, sidebar?, group? }
 export function menuItems(routes, user) {
   return routes
-    .filter((route) => route.meta?.menu && can(user, route.meta.permission))
+    .filter((route) => route.meta?.menu && allowed(user, route.meta))
     .map((route) => ({
       ...route.meta.menu,
       route: route.path,
@@ -28,8 +34,10 @@ export function menuItems(routes, user) {
 
 // Sidebar submenus: a route with meta.menu.group = 'finance' is nested under this entry.
 // The group only shows when the user can access at least one of its children.
+// tone: the parent's own color (restricted = masters-only area, warning icon).
 export const MENU_GROUPS = {
   finance: { label: 'Financeiro', icon: 'fa-solid fa-wallet', order: 30 },
+  restricted: { label: 'Restrita', icon: 'fa-solid fa-triangle-exclamation', tone: 'restricted', order: 900 },
 }
 
 // Turns the flat (already permission-filtered) menuItems into the sidebar tree.

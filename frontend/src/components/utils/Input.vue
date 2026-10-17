@@ -70,7 +70,7 @@ const props = defineProps({
   name: { type: String, default: null },
   autocomplete: { type: String, default: null },
   id: { type: String, default: '' },
-  /** cpf | cnpj | cpf-cnpj | phone | cep — modelValue guarda sempre o valor sem máscara */
+  /** cpf | cnpj | cpf-cnpj | phone | cep | money — modelValue guarda sempre o valor sem máscara (money: "1234.56") */
   mask: { type: String, default: '' },
 })
 
@@ -85,12 +85,17 @@ const displayValue = computed(() => (activeMask.value ? activeMask.value.format(
 const handleMaskedInput = (event) => {
   const input = event.target
   const digitsBeforeCursor = onlyDigitsBefore(input.value, input.selectionStart)
+  // Masks that fill from the right (money: "1" → "0,01") keep the caret at the same distance from the end.
+  const digitsAfterCursor = onlyDigitsBefore(input.value, input.value.length) - digitsBeforeCursor
 
   model.value = activeMask.value.unmask(input.value)
 
   nextTick(() => {
     input.value = displayValue.value
-    input.selectionStart = input.selectionEnd = cursorPositionAfterDigits(input.value, digitsBeforeCursor)
+    const digits = activeMask.value.fromRight
+      ? Math.max(onlyDigitsBefore(input.value, input.value.length) - digitsAfterCursor, 0)
+      : digitsBeforeCursor
+    input.selectionStart = input.selectionEnd = cursorPositionAfterDigits(input.value, digits)
   })
 }
 

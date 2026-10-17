@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Company;
 use App\Models\Customer;
 use App\Models\Transaction;
 use App\Models\User;
@@ -22,6 +23,7 @@ class ActivityLogController extends Controller
         'customer' => [Customer::class, 'customers.view'],
         'category' => [Category::class, 'finance.category.view'],
         'transaction' => [Transaction::class, 'finance.transaction.view'],
+        'company' => [Company::class, 'master'],
     ];
 
     /**
@@ -35,12 +37,14 @@ class ActivityLogController extends Controller
         ]);
 
         [$modelClass, $permission] = self::SUBJECT_MAP[$validated['subject_type']];
-        abort_unless($request->user()->hasPermission($permission), 403, 'Você não possui permissão para realizar esta ação.');
+        $allowed = $permission === 'master' ? $request->user()->master : $request->user()->hasPermission($permission);
+        abort_unless($allowed, 403, 'Você não possui permissão para realizar esta ação.');
 
         $subject = $modelClass::findOrFail($validated['subject_id']);
 
         $activities = Activity::forSubject($subject)
-            ->with('causer')
+            // A master acting in this company belongs to another one: load the name anyway.
+            ->with(['causer' => fn ($query) => $query->withoutGlobalScope('company')])
             ->latest()
             ->latest('id') // same-second entries keep their real order
             ->get();

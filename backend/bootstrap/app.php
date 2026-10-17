@@ -27,6 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'auth' => \App\Http\Middleware\AuthMiddleware::class,
+            'company' => \App\Http\Middleware\ResolveCompany::class,
+            'master' => \App\Http\Middleware\EnsureMaster::class,
             'permission' => \App\Http\Middleware\CheckPermission::class,
             'bot' => \App\Http\Middleware\BotMiddleware::class,
         ]);

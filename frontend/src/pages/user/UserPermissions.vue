@@ -1,11 +1,6 @@
 <template>
   <div class="permissions">
-    <div v-if="master" class="notice">
-      <i class="fa-solid fa-crown" aria-hidden="true" />
-      <span>Usuário <strong>master</strong>: tem todas as permissões, inclusive as que forem criadas no futuro.</span>
-    </div>
-
-    <div v-else-if="lockedCount" class="notice notice--muted">
+    <div v-if="lockedCount" class="notice notice--muted">
       <i class="fa-solid fa-lock" aria-hidden="true" />
       <span>Você só pode conceder ou remover permissões que você mesmo possui ({{ lockedCount }} bloqueada(s)).</span>
     </div>
@@ -19,7 +14,7 @@
           </div>
           <Switch
             :model-value="grantedIn(module) === module.permissions.length"
-            :disabled="isDisabled || module.permissions.every((p) => isLocked(p.key))"
+            :disabled="disabled || module.permissions.every((p) => isLocked(p.key))"
             :aria-label="`Liberar todas as permissões de ${module.name}`"
             @update:model-value="(on) => toggleModule(module, on)"
           />
@@ -32,8 +27,8 @@
               <code>{{ permission.key }}</code>
             </div>
             <Switch
-              :model-value="master || modelValue.includes(permission.key)"
-              :disabled="isDisabled || isLocked(permission.key)"
+              :model-value="modelValue.includes(permission.key)"
+              :disabled="disabled || isLocked(permission.key)"
               :aria-label="permission.description || permission.key"
               @update:model-value="(on) => toggle(permission.key, on)"
             />
@@ -54,14 +49,11 @@ import Switch from '@/components/utils/Switch.vue'
 const props = defineProps({
   catalog: { type: Array, required: true },
   modelValue: { type: Array, required: true },
-  master: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:modelValue'])
 const auth = useAuthStore()
-
-const isDisabled = computed(() => props.disabled || props.master)
 
 // Mirrors the API rule: a non-master can only change permissions they hold.
 const isLocked = (key) => !auth.can(key)
@@ -69,8 +61,7 @@ const lockedCount = computed(
   () => props.catalog.flatMap((m) => m.permissions).filter((p) => isLocked(p.key)).length,
 )
 
-const grantedIn = (module) =>
-  props.master ? module.permissions.length : module.permissions.filter((p) => props.modelValue.includes(p.key)).length
+const grantedIn = (module) => module.permissions.filter((p) => props.modelValue.includes(p.key)).length
 
 const toggle = (key, on) => {
   const next = new Set(props.modelValue)

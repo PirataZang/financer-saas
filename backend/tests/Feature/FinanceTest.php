@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\Company;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Service\PermissionService;
@@ -55,6 +56,9 @@ class FinanceTest extends TestCase
         $this->getJson('/api/finance/categories?active=0', $headers)->assertOk()->assertJsonPath('0.name', 'Pets');
 
         $this->postJson('/api/finance/categories', ['name' => 'Pets'], $headers)->assertUnprocessable()->assertJsonValidationErrors('name');
+        // Unique per company: another company's name neither blocks nor shows up.
+        Company::as(Company::create(['name' => 'Outra'])->id, fn () => Category::create(['name' => 'Animais', 'type' => 'expense']));
+        $this->postJson('/api/finance/categories', ['name' => 'Animais'], $headers)->assertCreated();
         $this->postJson('/api/finance/categories', ['name' => 'X1', 'color' => 'red', 'type' => 'transfer'], $headers)
             ->assertUnprocessable()->assertJsonValidationErrors(['color', 'type']);
 
@@ -141,6 +145,84 @@ class FinanceTest extends TestCase
         $this->assertSame(['Mercado'], $descriptions('min_amount=50&max_amount=100'));
         $this->assertSame(['Padaria'], $descriptions('search=PADA'));
         $this->getJson('/api/finance/transactions?from=2026-10-05&to=2026-10-01', $headers)->assertUnprocessable();
+    }
+
+    public function test_list_totals_cover_every_filtered_row_not_just_the_page(): void
+    {
+        $headers = $this->headers();
+        $category = $this->category(['type' => 'both']);
+        Transaction::create(['type' => 'income', 'amount' => '1000.00', 'description' => 'Salário', 'category_id' => $category->id, 'date' => '2026-10-01']);
+        Transaction::create(['type' => 'expense', 'amount' => '300.10', 'description' => 'Aluguel', 'category_id' => $category->id, 'date' => '2026-10-02', 'status' => 'pending']);
+        Transaction::create(['type' => 'expense', 'amount' => '50.00', 'description' => 'Antiga', 'category_id' => $category->id, 'date' => '2026-09-01']);
+
+        $this->getJson('/api/finance/transactions?from=2026-10-01&to=2026-10-31&per_page=1', $headers)
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('total', 2)
+            ->assertJsonPath('totals', ['income' => 1000, 'expense' => 300.1, 'balance' => 699.9, 'pending' => 1]);
+    }
+
+    public function test_installments_split_the_total_and_future_ones_are_pending(): void
+    {
+        $this->travelTo('2026-10-15');
+        $headers = $this->headers();
+        $category = $this->category();
+
+        $this->postJson('/api/finance/transactions', $this->payload([
+            'category_id' => $category->id, 'amount' => '100.00', 'date' => '2026-01-31', 'repeat' => 'installments', 'repeat_count' => 3,
+        ]), $headers)->assertCreated()->assertJson(['description' => 'Compra do mês (1/3)', 'amount' => '33.34']);
+
+        $this->assertSame(
+            [
+                ['Compra do mês (1/3)', '33.34', '2026-01-31', 'paid'],
+                ['Compra do mês (2/3)', '33.33', '2026-02-28', 'paid'],
+                ['Compra do mês (3/3)', '33.33', '2026-03-31', 'paid'],
+            ],
+            Transaction::orderBy('date')->get()->map(fn ($t) => [$t->description, $t->amount, $t->date, $t->status->value])->all(),
+        );
+
+        // Monthly: same amount each month; only what's after today is pending.
+        $this->postJson('/api/finance/transactions', $this->payload([
+            'category_id' => $category->id, 'amount' => '1200.00', 'description' => 'Aluguel', 'date' => '2026-10-10', 'repeat' => 'monthly', 'repeat_count' => 3,
+        ]), $headers)->assertCreated();
+
+        $this->assertSame(
+            [['1200.00', '2026-10-10', 'paid'], ['1200.00', '2026-11-10', 'pending'], ['1200.00', '2026-12-10', 'pending']],
+            Transaction::where('description', 'Aluguel')->orderBy('date')->get()->map(fn ($t) => [$t->amount, $t->date, $t->status->value])->all(),
+        );
+    }
+
+    public function test_series_is_all_or_nothing_and_validated(): void
+    {
+        $headers = $this->headers();
+        $category = $this->category();
+
+        $this->postJson('/api/finance/transactions', $this->payload(['category_id' => $category->id, 'amount' => '0.02', 'repeat' => 'installments', 'repeat_count' => 3]), $headers)
+            ->assertUnprocessable()->assertJsonValidationErrors('repeat_count');
+        $this->postJson('/api/finance/transactions', $this->payload(['category_id' => $category->id, 'repeat' => 'weekly', 'repeat_count' => 200]), $headers)
+            ->assertUnprocessable()->assertJsonValidationErrors(['repeat', 'repeat_count']);
+        $this->postJson('/api/finance/transactions', $this->payload(['category_id' => $category->id, 'repeat' => 'monthly']), $headers)
+            ->assertUnprocessable()->assertJsonValidationErrors('repeat_count');
+        $this->assertDatabaseCount('finance_transactions', 0);
+    }
+
+    public function test_bulk_status_change(): void
+    {
+        $headers = $this->headers();
+        $category = $this->category();
+        $pending = fn (string $description) => Transaction::create($this->payload(['description' => $description, 'category_id' => $category->id, 'status' => 'pending']))->id;
+        $ids = [$pending('A'), $pending('B')];
+        $paid = Transaction::create($this->payload(['category_id' => $category->id]))->id;
+
+        $this->patchJson('/api/finance/transactions/status', ['ids' => [...$ids, $paid], 'status' => 'paid'], $headers)
+            ->assertOk()->assertJson(['updated' => 2]);
+        $this->assertSame(0, Transaction::where('status', 'pending')->count());
+        $this->getJson("/api/activity-log?subject_type=transaction&subject_id={$ids[0]}", $headers)->assertOk()->assertJsonPath('0.event', 'updated');
+
+        $this->patchJson('/api/finance/transactions/status', ['ids' => [], 'status' => 'done'], $headers)
+            ->assertUnprocessable()->assertJsonValidationErrors(['ids', 'status']);
+        $this->patchJson('/api/finance/transactions/status', ['ids' => $ids, 'status' => 'pending'], $this->headers(['finance.transaction.view']))
+            ->assertForbidden();
     }
 
     public function test_dashboard_aggregates_paid_transactions_only(): void

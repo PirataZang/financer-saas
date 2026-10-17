@@ -135,16 +135,23 @@ class AuthorizationTest extends TestCase
         $this->deleteJson("/api/users/{$master->id}", [], $headers)->assertForbidden();
     }
 
-    public function test_non_master_cannot_set_master_flag(): void
+    public function test_master_flag_is_never_set_through_the_api(): void
     {
         [$user, $headers] = $this->login(['users.update', 'users.create']);
+        [, $masterHeaders] = $this->login(master: true);
 
-        $this->putJson("/api/users/{$user->id}", ['master' => true], $headers)->assertForbidden();
-        $this->postJson('/api/users', ['name' => 'X', 'email' => 'x@x.com', 'password' => 'secret123', 'master' => true], $headers)
-            ->assertForbidden();
+        foreach ([$headers, $masterHeaders] as $i => $h) {
+            $this->putJson("/api/users/{$user->id}", ['master' => true], $h)->assertOk();
+            $this->postJson('/api/users', ['name' => 'X', 'email' => "x{$i}@x.com", 'password' => 'secret123', 'master' => true], $h)
+                ->assertCreated();
+        }
 
         $this->assertFalse($user->fresh()->master);
-        $this->assertDatabaseMissing('users', ['email' => 'x@x.com']);
+        $this->assertSame(0, User::whereIn('email', ['x0@x.com', 'x1@x.com'])->where('master', true)->count());
+
+        // The flag lives only in the database: user payloads never carry it.
+        $this->assertArrayNotHasKey('master', $this->getJson("/api/users/{$user->id}", $masterHeaders)->json());
+        $this->assertArrayNotHasKey('master', $this->getJson('/api/users', $masterHeaders)->json('data.0'));
     }
 
     public function test_master_has_every_permission_key_without_assignments(): void
@@ -155,7 +162,6 @@ class AuthorizationTest extends TestCase
         $this->assertNotEmpty($all);
         $this->assertSame($all, $master->permissionKeys());
         $this->getJson('/api/auth/me', $headers)->assertJson(['master' => true, 'permissions' => $all]);
-        $this->getJson("/api/users/{$master->id}", $headers)->assertJson(['permissions' => $all]);
 
         // A permission created later is covered immediately too.
         app(PermissionService::class)->create('reports', 'view', 'Ver relatórios', 'Relatórios');
@@ -164,37 +170,20 @@ class AuthorizationTest extends TestCase
         app(PermissionService::class)->delete('reports.view');
     }
 
-    public function test_master_can_grant_and_remove_master_and_it_is_audited(): void
-    {
-        [, $headers] = $this->login(master: true);
-        $user = User::factory()->create();
-
-        $this->putJson("/api/users/{$user->id}", ['master' => true], $headers)->assertOk();
-        $this->assertTrue($user->fresh()->master);
-
-        $created = $this->postJson('/api/users', ['name' => 'M', 'email' => 'm@x.com', 'password' => 'secret123', 'master' => true], $headers)
-            ->assertCreated()->json();
-        $this->assertTrue(User::find($created['id'])->master);
-
-        $this->putJson("/api/users/{$user->id}", ['master' => false], $headers)->assertOk();
-        $this->assertFalse($user->fresh()->master);
-
-        $fields = collect($this->getJson("/api/activity-log?subject_type=user&subject_id={$user->id}", $headers)->json())
-            ->flatMap(fn ($entry) => collect($entry['changes'])->pluck('field'));
-        $this->assertTrue($fields->contains('master'));
-    }
-
-    public function test_last_active_master_cannot_be_demoted_deactivated_or_deleted(): void
+    public function test_master_accounts_are_changed_only_in_the_database(): void
     {
         [$master, $headers] = $this->login(master: true);
+        $other = User::factory()->master()->create();
 
-        $this->putJson("/api/users/{$master->id}", ['master' => false], $headers)->assertForbidden();
-        $this->putJson("/api/users/{$master->id}", ['active' => false], $headers)->assertForbidden();
-        $this->deleteJson("/api/users/{$master->id}", [], $headers)->assertForbidden();
-        $this->assertTrue($master->fresh()->master);
+        foreach ([$master, $other] as $target) {
+            $this->getJson("/api/users/{$target->id}", $headers)->assertNotFound();
+            $this->putJson("/api/users/{$target->id}", ['name' => 'X'], $headers)->assertForbidden();
+            $this->putJson("/api/users/{$target->id}/permissions", ['permissions' => []], $headers)->assertForbidden();
+            $this->deleteJson("/api/users/{$target->id}", [], $headers)->assertForbidden();
+        }
 
-        User::factory()->master()->create();
-        $this->putJson("/api/users/{$master->id}", ['master' => false], $headers)->assertOk();
+        $listed = collect($this->getJson('/api/users', $headers)->json('data'))->pluck('id');
+        $this->assertFalse($listed->contains($master->id) || $listed->contains($other->id));
     }
 
     public function test_activity_log_requires_view_permission_of_the_subject(): void
@@ -224,6 +213,8 @@ class AuthorizationTest extends TestCase
         ];
 
         $unprotected = collect(Route::getRoutes()->getRoutes())
+            // The restricted area (companies, status) is guarded by the `master` middleware instead.
+            ->reject(fn ($route) => in_array('master', $route->gatherMiddleware(), true))
             ->map->getActionName()
             ->filter(fn (string $action) => str_starts_with($action, 'App\\Http\\Controllers\\'))
             ->reject(fn (string $action) => in_array($action, $authOnly, true))

@@ -10,6 +10,7 @@
   --color-success-soft: #{$color-success-soft};
   --color-warning: #{$color-warning};
   --color-warning-soft: #{$color-warning-soft};
+  --color-warning-text: #{$color-warning-text};
   --color-danger: #{$color-danger};
   --color-danger-soft: #{$color-danger-soft};
   --color-info: #{$color-info};
@@ -127,6 +128,37 @@ svg {
 
 .glass-panel-glow {
   box-shadow: var(--shadow-md);
+}
+
+// Toggle pill for quick filters (history tabs, list periods). Active = info blue.
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: #ffffff;
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    background: var(--color-bg-muted);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  &.is-active {
+    background: var(--color-info);
+    border-color: var(--color-info);
+    color: #ffffff;
+  }
 }
 
 ::-webkit-scrollbar {

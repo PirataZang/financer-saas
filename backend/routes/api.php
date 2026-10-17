@@ -4,6 +4,7 @@ use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Bot\BotController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PermissionController;
@@ -17,8 +18,9 @@ use Illuminate\Support\Facades\Route;
 // Every route below also passes `throttle:default` (bootstrap/app.php); profiles in config/rate-limit.php.
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:authentication');
 
-// Public (unauthenticated) endpoints: always validated + `throttle:public`.
-Route::prefix('public')->middleware('throttle:public')->group(function () {
+// Public (unauthenticated) endpoints: always validated + `throttle:public`. The company is
+// identified by its token, so a form only feeds the company it was published for.
+Route::prefix('public/{token}')->middleware('throttle:public')->group(function () {
     Route::post('/customers', [CustomerController::class, 'register']);
 });
 
@@ -35,8 +37,9 @@ Route::prefix('bot')->group(function () {
     });
 });
 
-// 'permission' enforces the #[Permission] attribute of each controller action.
-Route::middleware(['auth', 'permission'])->group(function () {
+// 'company' scopes every query to the user's company (a master may switch with X-Company-Id)
+// and blocks inactive companies; 'permission' enforces each action's #[Permission].
+Route::middleware(['auth', 'company', 'permission'])->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
@@ -79,6 +82,7 @@ Route::middleware(['auth', 'permission'])->group(function () {
             Route::get('/options', [TransactionController::class, 'options']);
             Route::get('/{id}', [TransactionController::class, 'index']);
             Route::post('/', [TransactionController::class, 'create']);
+            Route::patch('/status', [TransactionController::class, 'status']);
             Route::put('/{id}', [TransactionController::class, 'update']);
             Route::delete('/{id}', [TransactionController::class, 'delete']);
         });
@@ -90,36 +94,49 @@ Route::middleware(['auth', 'permission'])->group(function () {
 
     Route::get('/activity-log', [ActivityLogController::class, 'index']);
 
-    Route::get('/status', function () {
-        $dbConnected = false;
-        $dbError = null;
-        $dbName = '';
+    // Restricted area: masters only (not a permission key, can't be granted).
+    Route::middleware('master')->group(function () {
+        Route::prefix('companies')->group(function () {
+            Route::get('/', [CompanyController::class, 'list']);
+            Route::get('/{id}', [CompanyController::class, 'index']);
+            Route::post('/', [CompanyController::class, 'create']);
+            Route::put('/{id}', [CompanyController::class, 'update']);
+            Route::delete('/{id}', [CompanyController::class, 'delete']);
+            Route::post('/{id}/token', [CompanyController::class, 'regenerateToken']);
+            Route::delete('/{id}/token', [CompanyController::class, 'revokeToken']);
+        });
 
-        try {
-            DB::connection()->getPdo();
-            $dbConnected = true;
-            $dbName = DB::connection()->getDatabaseName();
-        } catch (\Exception $e) {
-            $dbError = $e->getMessage();
-        }
+        Route::get('/status', function () {
+            $dbConnected = false;
+            $dbError = null;
+            $dbName = '';
 
-        $redisConnected = false;
-        $redisError = null;
+            try {
+                DB::connection()->getPdo();
+                $dbConnected = true;
+                $dbName = DB::connection()->getDatabaseName();
+            } catch (\Exception $e) {
+                $dbError = $e->getMessage();
+            }
 
-        try {
-            Redis::ping();
-            $redisConnected = true;
-        } catch (\Exception $e) {
-            $redisError = $e->getMessage();
-        }
+            $redisConnected = false;
+            $redisError = null;
 
-        return response()->json([
-            'status' => 'online',
-            'database' => $dbConnected ? 'connected' : 'disconnected',
-            'db_name' => $dbName,
-            'database_error' => $dbError,
-            'redis' => $redisConnected ? 'connected' : 'disconnected',
-            'redis_error' => $redisError,
-        ]);
+            try {
+                Redis::ping();
+                $redisConnected = true;
+            } catch (\Exception $e) {
+                $redisError = $e->getMessage();
+            }
+
+            return response()->json([
+                'status' => 'online',
+                'database' => $dbConnected ? 'connected' : 'disconnected',
+                'db_name' => $dbName,
+                'database_error' => $dbError,
+                'redis' => $redisConnected ? 'connected' : 'disconnected',
+                'redis_error' => $redisError,
+            ]);
+        });
     });
 });

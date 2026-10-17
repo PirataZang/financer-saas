@@ -4,15 +4,15 @@ namespace App\Models;
 
 use App\Enums\CategoryType;
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['name', 'icon', 'color', 'type', 'active', 'sort_order'])]
 class Category extends Model
 {
-    use Auditable, SoftDeletes;
+    use Auditable, BelongsToCompany, SoftDeletes;
 
     protected $table = 'finance_categories';
 

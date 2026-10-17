@@ -9,6 +9,12 @@ use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
+    /**
+     * E-mail is the login, so it is unique across all companies. The message doesn't say
+     * "already taken": it must not reveal that the address exists in another company.
+     */
+    private const EMAIL_MESSAGES = ['email.unique' => 'Não foi possível usar este e-mail. Informe outro.'];
+
     public function __construct(
         protected UserService $userService,
     ) {
@@ -48,10 +54,9 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
             'active' => 'sometimes|boolean',
-            'master' => 'sometimes|boolean',
-        ]);
+        ], self::EMAIL_MESSAGES);
 
-        $user = $this->userService->create($request->user(), $validated);
+        $user = $this->userService->create($validated);
 
         return response()->json($user, 201);
     }
@@ -67,10 +72,9 @@ class UserController extends Controller
             'email' => 'sometimes|string|email|max:255|unique:users,email,' . $id,
             'password' => 'sometimes|string|min:8',
             'active' => 'sometimes|boolean',
-            'master' => 'sometimes|boolean',
-        ]);
+        ], self::EMAIL_MESSAGES);
 
-        $user = $this->userService->update($request->user(), $id, $validated);
+        $user = $this->userService->update($id, $validated);
 
         return response()->json($user);
     }
@@ -81,7 +85,7 @@ class UserController extends Controller
     #[Permission('users.delete')]
     public function delete(Request $request, int $id): JsonResponse
     {
-        $this->userService->delete($request->user(), $id);
+        $this->userService->delete($id);
 
         return response()->json(['message' => 'Usuário excluído com sucesso.']);
     }

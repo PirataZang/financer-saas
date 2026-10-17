@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Enums\CustomerStatus;
+use App\Models\Company;
 use App\Models\Customer;
 use App\Service\CustomerService;
 use App\Service\ZipCodeService;
@@ -37,11 +38,24 @@ class CustomerCommand extends Command
         {--zip-code= : CEP; preenche o endereço vazio pela consulta de CEP}
         {--street=} {--number=} {--complement=} {--neighborhood=} {--reference=}
         {--city=} {--state=} {--country=}
-        {--force : Não pede confirmação (delete)}';
+        {--force : Não pede confirmação (delete)}
+        {--company=1 : ID da empresa (padrão: 1, Empresa Padrão)}';
 
     protected $description = 'Gerencia clientes (mesmas regras da API)';
 
     public function handle(CustomerService $customers, ZipCodeService $zipCodes): int
+    {
+        $company = Company::find((int) $this->option('company'));
+        if (!$company) {
+            $this->error("Empresa #{$this->option('company')} não encontrada.");
+
+            return self::FAILURE;
+        }
+
+        return Company::as($company->id, fn () => $this->operate($customers, $zipCodes));
+    }
+
+    private function operate(CustomerService $customers, ZipCodeService $zipCodes): int
     {
         try {
             return match ($this->argument('operation')) {

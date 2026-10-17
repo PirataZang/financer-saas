@@ -113,7 +113,6 @@ const columnDefs = ref([
   { field: 'name', headerName: 'Nome Completo', flex: 1, sortable: true, filter: true },
   { field: 'email', headerName: 'E-mail', flex: 1, sortable: true, filter: true },
   { field: 'active', headerName: 'Situação', type: 'boolean', width: 130, sortable: true, cellRendererParams: { trueLabel: 'Ativo', falseLabel: 'Inativo' } },
-  { field: 'master', headerName: 'Master', type: 'boolean', width: 120, sortable: true },
   {
     field: 'created_at',
     headerName: 'Data de Cadastro',
@@ -198,79 +197,3 @@ const deleteSelectedUsers = async () => {
 onMounted(fetchUsers)
 </script>
 
-<style scoped>
-.list-toolbar {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 12px;
-  width: 100%;
-}
-
-.list-toolbar .search-input {
-  width: 100%;
-  max-width: 420px;
-}
-
-.list-toolbar__actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.grid-wrap {
-  background: #ffffff;
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-
-:deep(.ag-theme-quartz) {
-  --ag-background-color: #ffffff;
-  --ag-header-background-color: #f8fafc;
-  --ag-border-color: #e2e8f0;
-  --ag-header-foreground-color: #0f172a;
-  --ag-foreground-color: #0f172a;
-  --ag-data-color: #0f172a;
-  --ag-row-hover-color: #f8fafc;
-  --ag-selected-row-background-color: #eff6ff;
-  --ag-odd-row-background-color: #ffffff;
-  border: 0;
-  font-family: var(--font-sans);
-}
-
-:deep(.custom-pagination) {
-  background: #f8fafc !important;
-  border-top: 1px solid #e2e8f0 !important;
-  color: #64748b !important;
-}
-
-:deep(.custom-pagination .highlight) {
-  color: var(--color-primary) !important;
-}
-
-:deep(.custom-pagination .pag-btn) {
-  background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  color: #0f172a !important;
-}
-
-:deep(.custom-pagination .pag-btn:hover:not(:disabled)) {
-  background: #f1f5f9 !important;
-  border-color: var(--color-primary) !important;
-}
-
-:deep(.custom-pagination .pag-btn.page-num.active) {
-  background: var(--color-primary) !important;
-  border-color: var(--color-primary) !important;
-  color: white !important;
-}
-
-:deep(.custom-pagination .size-select) {
-  background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  color: #0f172a !important;
-}
-</style>

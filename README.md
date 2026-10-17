@@ -59,11 +59,25 @@ cd frontend && npm install && npm run dev
 docker compose exec backend php artisan db:seed
 ```
 
-Roda automaticamente a cada subida do container (sincroniza as permissões e cria o usuário só se não
-existir). Usuário de login, **master** (acesso total):
+Roda automaticamente a cada subida do container (sincroniza as permissões e cria os usuários só se não
+existirem). Logins:
 
-- **E-mail**: `test@example.com`
-- **Senha**: `1234`
+- **Master** (acesso total a todas as empresas, área Restrita): `test@example.com` / `1234` — Empresa Padrão
+- **Usuário comum** da "Empresa Exemplo" (clientes + dashboard): `exemplo@example.com` / `1234`
+
+## Multi-empresa (SaaS)
+
+Todo registro pertence a uma empresa; a **Empresa Padrão** (id 1) sempre existe e não pode ser excluída.
+Masters trocam de empresa no topo da tela (à esquerda do perfil) e gerenciam empresas em **Restrita › Empresas** (dados,
+licença com data de expiração e token). Empresa sem token ou vencida bloqueia os usuários dela na hora.
+Masters só são criados/alterados direto no banco:
+
+```bash
+docker compose exec postgres psql -U <db_user> -d <db_name> -c "UPDATE users SET master = true WHERE email = 'fulano@x.com'"
+```
+
+Formulário público de clientes: `POST /api/public/{token-da-empresa}/customers`. Regras e padrões em
+`design.md` (seção 12).
 
 ## Bot do Telegram
 

@@ -22,7 +22,7 @@ export async function replyError(ctx: BotContext, error: unknown): Promise<void>
 
   let message = 'Não consegui concluir agora. Tente novamente em alguns instantes.'
   if (error instanceof BackendError && error.status === 429) message = 'Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.'
-  else if (error instanceof BackendError && error.status === 422) message = error.message
+  else if (error instanceof BackendError && (error.status === 422 || error.code === 'COMPANY_INACTIVE')) message = error.message
   else log('error', { message: error instanceof Error ? error.message : String(error), status: error instanceof BackendError ? error.status : undefined })
 
   if (error instanceof GrammyError) return // Telegram itself failed: nothing useful to show.

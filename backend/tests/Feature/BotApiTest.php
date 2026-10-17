@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\Company;
 use App\Models\TelegramAccount;
 use App\Models\Transaction;
 use App\Models\User;
@@ -63,6 +64,23 @@ class BotApiTest extends TestCase
         $this->getJson('/api/bot/me', $this->bot())->assertOk()->assertJson(['telegram_user_id' => 42, 'username' => 'igor']);
         // Activation is per Telegram user.
         $this->getJson('/api/bot/me', $this->bot(7))->assertForbidden();
+    }
+
+    public function test_bot_works_inside_the_account_company_only(): void
+    {
+        $this->activate();
+        $this->assertSame(Company::DEFAULT_ID, TelegramAccount::first()->company_id);
+
+        $mine = Category::create(['name' => 'Mercado', 'type' => 'expense']);
+        $other = Company::create(['name' => 'Outra']);
+        $foreign = Company::as($other->id, fn () => Category::create(['name' => 'Mercado', 'type' => 'expense']));
+
+        $this->getJson('/api/bot/finance/categories?type=expense', $this->bot())->assertOk()->assertJsonCount(1)->assertJsonPath('0.value', $mine->id);
+        $this->postJson('/api/bot/finance/transactions', $this->payload($foreign->id), $this->bot())
+            ->assertUnprocessable()->assertJsonValidationErrors('category_id');
+
+        Company::find(Company::DEFAULT_ID)->revokeToken();
+        $this->getJson('/api/bot/me', $this->bot())->assertForbidden()->assertJson(['code' => 'COMPANY_INACTIVE']);
     }
 
     public function test_revoked_account_is_blocked_even_with_the_code(): void

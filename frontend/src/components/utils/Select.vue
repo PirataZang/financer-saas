@@ -18,6 +18,7 @@
       @keydown="onKeydown"
     >
       <span class="select-value">
+        <slot name="value" :selected="selected">
         <template v-if="multiple && selectedOptions.length">
           <StatusBadge
             v-for="option in selectedOptions.slice(0, 2)"
@@ -41,6 +42,7 @@
           <span class="select-text">{{ selected.label }}</span>
         </template>
         <span v-else class="select-placeholder">{{ placeholder || 'Selecione...' }}</span>
+        </slot>
       </span>
       <i v-if="loading" class="fa-solid fa-spinner fa-spin select-chevron" aria-label="Carregando" />
       <i v-else class="fa-solid fa-chevron-down select-chevron" aria-hidden="true" />
@@ -89,16 +91,22 @@
           @mousedown.prevent="choose(option)"
           @mousemove="activeIndex = index"
         >
+          <slot name="option" :option="option" :selected="isSelected(option)">
           <StatusBadge v-if="option.color" :label="option.label" :color="option.color" :icon="option.icon" />
           <span v-else class="select-option__label" :class="{ 'is-placeholder': option.value === '' }">
             <i v-if="option.icon" :class="option.icon" class="select-icon" aria-hidden="true" />
             {{ option.label }}
           </span>
+          </slot>
           <i v-if="isSelected(option)" class="fa-solid fa-check select-check" aria-hidden="true" />
         </li>
         <li v-if="!items.length" class="select-empty">
           {{ loading ? 'Carregando...' : query ? 'Nenhum resultado' : 'Nenhuma opção disponível' }}
         </li>
+        <li v-if="hiddenCount" class="select-hidden" role="presentation">
+          Mostrando {{ items.length }} de {{ items.length + hiddenCount }}. Continue digitando para filtrar.
+        </li>
+        <li v-if="$slots.footer" role="presentation"><slot name="footer" :close="close" /></li>
       </ul>
     </Transition>
   </div>
@@ -113,6 +121,9 @@ import { normalize } from '@/permissions'
 // options = [{ value, label, icon?, color? }] — com `color` (tom do design system ou hex) a opção
 // vira StatusBadge. `placeholder` vira a opção vazia (ex.: "Todos os status" num filtro).
 // searchable (busca sem acento) · multiple (v-model = array) · clearable · loading · disabled.
+// limit: máximo de opções exibidas (0 = todas), com aviso "Mostrando N de M" — ex. CompanySwitcher.
+// Slots opcionais: `value` ({ selected }) e `option` ({ option, selected }) trocam o conteúdo do gatilho e
+// das opções (opções podem carregar campos extras); `footer` ({ close }) entra no fim da lista.
 // Seletores de entidade (ex. finance/CategorySelect) só carregam as opções e herdam o resto via $attrs.
 const props = defineProps({
   label: { type: String, default: '' },
@@ -125,6 +136,7 @@ const props = defineProps({
   multiple: { type: Boolean, default: false },
   clearable: { type: Boolean, default: false },
   loading: { type: Boolean, default: false },
+  limit: { type: Number, default: 0 },
 })
 
 const model = defineModel({ default: '' })
@@ -150,11 +162,13 @@ const triggerAttrs = computed(() => {
   return rest
 })
 
-const items = computed(() => {
+const matches = computed(() => {
   const words = normalize(query.value)
   const options = words ? props.options.filter((option) => normalize(option.label).includes(words)) : props.options
   return props.placeholder && !props.multiple && !words ? [{ value: '', label: props.placeholder }, ...options] : options
 })
+const items = computed(() => (props.limit > 0 ? matches.value.slice(0, props.limit) : matches.value))
+const hiddenCount = computed(() => matches.value.length - items.value.length)
 const selectedValues = computed(() => (props.multiple ? (Array.isArray(model.value) ? model.value : []) : [model.value]))
 const isSelected = (option) => selectedValues.value.includes(option.value)
 const selected = computed(() => props.options.find((option) => option.value === model.value) || null)
@@ -483,6 +497,12 @@ onUnmounted(() => {
     font-family: inherit;
     font-size: $font-md;
   }
+}
+
+.select-hidden {
+  padding: 6px 4px 2px;
+  font-size: $font-xs;
+  color: $color-text-muted;
 }
 
 .select-empty {

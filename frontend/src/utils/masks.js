@@ -61,4 +61,21 @@ const cep = {
   unmask: onlyDigits,
 }
 
-export const MASKS = { cpf, cnpj, 'cpf-cnpj': cpfCnpj, phone, cep }
+// Valor em reais: o model guarda o decimal da API ("1234.56"); a tela mostra "1.234,56". Digitar empurra
+// da direita (centavos primeiro, como na maquininha). Tudo por string: dinheiro nunca passa por float.
+const money = {
+  fromRight: true,
+  format(value) {
+    if (value === '' || value == null) return ''
+    const [whole, fraction = ''] = String(value).split('.')
+    return `${Number(whole).toLocaleString('pt-BR')},${fraction.padEnd(2, '0').slice(0, 2)}`
+  },
+  unmask(value) {
+    const digits = onlyDigits(value).replace(/^0+/, '').slice(0, 15)
+    if (!digits) return ''
+    const padded = digits.padStart(3, '0')
+    return `${padded.slice(0, -2)}.${padded.slice(-2)}`
+  },
+}
+
+export const MASKS = { cpf, cnpj, 'cpf-cnpj': cpfCnpj, phone, cep, money }

@@ -113,9 +113,11 @@ class FinanceDashboardService
     }
 
     /**
+     * Also the transaction list's totals (TransactionService::totals).
+     *
      * @return array{income: float, expense: float}
      */
-    private function totalsByType(Builder $query): array
+    public function totalsByType(Builder $query): array
     {
         $sums = $query->select('type')->selectRaw('SUM(amount) as total')->groupBy('type')->toBase()->pluck('total', 'type');
 

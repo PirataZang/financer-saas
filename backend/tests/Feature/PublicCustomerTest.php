@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Company;
 use App\Models\Customer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -10,9 +11,11 @@ class PublicCustomerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function register(array $overrides = [], array $server = [])
+    private function register(array $overrides = [], array $server = [], ?string $token = null)
     {
-        return $this->withServerVariables($server)->postJson('/api/public/customers', [
+        $token ??= Company::find(Company::DEFAULT_ID)->token;
+
+        return $this->withServerVariables($server)->postJson("/api/public/{$token}/customers", [
             'name' => 'Visitante',
             'email' => 'visitante@example.com',
             ...$overrides,
@@ -29,6 +32,34 @@ class PublicCustomerTest extends TestCase
         $this->assertSame('lead', $customer->status->value);
         $this->assertTrue($customer->active);
         $this->assertSame('4733334444', $customer->phone);
+    }
+
+    public function test_the_lead_goes_to_the_company_of_the_token(): void
+    {
+        $other = Company::create(['name' => 'Outra']);
+        $other->regenerateToken();
+
+        $this->register(['email' => 'a@example.com'], token: $other->token)->assertCreated();
+
+        $this->assertSame(0, Customer::count()); // default company (current in tests) got nothing
+        $this->assertSame(1, Company::as($other->id, fn () => Customer::where('email', 'a@example.com')->count()));
+    }
+
+    public function test_unknown_revoked_or_expired_token_is_a_plain_404(): void
+    {
+        $company = Company::find(Company::DEFAULT_ID);
+        $token = $company->token;
+
+        $this->register(token: 'nope')->assertNotFound();
+
+        $company->forceFill(['expires_at' => now()->subDay()->toDateString()])->save();
+        $this->register(token: $token)->assertNotFound();
+
+        $company->forceFill(['expires_at' => null])->save();
+        $company->revokeToken();
+        $this->register(token: $token)->assertNotFound();
+
+        $this->assertDatabaseCount('customers', 0);
     }
 
     public function test_public_registration_applies_the_same_validation(): void

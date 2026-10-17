@@ -13,7 +13,8 @@ class UserService
      */
     public function list(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = User::query();
+        // Masters are platform accounts managed only in the database: never listed or editable here.
+        $query = User::where('master', false);
 
         if (!empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
@@ -30,7 +31,7 @@ class UserService
      */
     public function index(int $id): array
     {
-        $user = User::findOrFail($id);
+        $user = User::where('master', false)->findOrFail($id);
 
         return [...$user->toArray(), 'permissions' => $user->permissionKeys()];
     }
@@ -38,35 +39,18 @@ class UserService
     /**
      * Create a new user.
      */
-    public function create(User $actor, array $data): User
+    public function create(array $data): User
     {
-        $master = $this->pullMaster($actor, $data);
-        $user = User::create($data);
-
-        if ($master !== null) {
-            $user->forceFill(['master' => $master])->save();
-        }
-
-        return $user;
+        return User::create($data);
     }
 
     /**
      * Update an existing user.
      */
-    public function update(User $actor, int $id, array $data): User
+    public function update(int $id, array $data): User
     {
-        $user = $this->findManageable($actor, $id);
-        $master = $this->pullMaster($actor, $data);
-
-        if ($master === false || (array_key_exists('active', $data) && !$data['active'])) {
-            $this->assertNotLastMaster($user);
-        }
-
-        $user->fill($data);
-        if ($master !== null) {
-            $user->forceFill(['master' => $master]);
-        }
-        $user->save();
+        $user = $this->findManageable($id);
+        $user->update($data);
 
         return $user;
     }
@@ -74,41 +58,9 @@ class UserService
     /**
      * Delete a user.
      */
-    public function delete(User $actor, int $id): bool
+    public function delete(int $id): bool
     {
-        $user = $this->findManageable($actor, $id);
-        $this->assertNotLastMaster($user);
-
-        return $user->delete();
-    }
-
-    /**
-     * Only a master can grant or remove master (it is not mass-assignable).
-     */
-    private function pullMaster(User $actor, array &$data): ?bool
-    {
-        if (!array_key_exists('master', $data)) {
-            return null;
-        }
-
-        $master = (bool) $data['master'];
-        unset($data['master']);
-
-        if (!$actor->master) {
-            throw new AccessDeniedHttpException('Somente um usuário master pode definir quem é master.');
-        }
-
-        return $master;
-    }
-
-    /**
-     * Never leave the system without an active master (nobody could grant permissions).
-     */
-    private function assertNotLastMaster(User $user): void
-    {
-        if ($user->master && !User::where('master', true)->where('active', true)->whereKeyNot($user->id)->exists()) {
-            throw new AccessDeniedHttpException('Este é o único usuário master ativo; defina outro master antes.');
-        }
+        return $this->findManageable($id)->delete();
     }
 
     /**
@@ -120,7 +72,7 @@ class UserService
      */
     public function syncPermissions(User $actor, int $id, array $keys): array
     {
-        $user = $this->findManageable($actor, $id);
+        $user = $this->findManageable($id);
 
         if (!$actor->master) {
             $current = $user->permissionKeys();
@@ -142,6 +94,7 @@ class UserService
             activity(class_basename($user))
                 ->performedOn($user)
                 ->causedBy($actor)
+                ->tap(fn ($activity) => $activity->company_id = $user->company_id)
                 ->event('updated')
                 ->withProperties([
                     'old' => ['permissions' => implode(', ', $before) ?: '—'],
@@ -154,15 +107,15 @@ class UserService
     }
 
     /**
-     * Only a master can change or delete a master account; otherwise users.update
-     * would let anyone reset the master's password and take over.
+     * Master accounts are created and changed only in the database, by nobody through the
+     * API (not even another master). Users of another company are a plain 404 (scope).
      */
-    private function findManageable(User $actor, int $id): User
+    private function findManageable(int $id): User
     {
         $user = User::findOrFail($id);
 
-        if ($user->master && !$actor->master) {
-            throw new AccessDeniedHttpException('Somente um usuário master pode alterar outro master.');
+        if ($user->master) {
+            throw new AccessDeniedHttpException('Usuários master só podem ser alterados diretamente no banco de dados.');
         }
 
         return $user;
