@@ -8,6 +8,7 @@ import 'sweetalert2/dist/sweetalert2.min.css'
 import './style.css'
 import './styles/main.scss'
 import './styles/form.scss'
+import './styles/list.scss'
 import './styles/swal.scss'
 
 const app = createApp(App)

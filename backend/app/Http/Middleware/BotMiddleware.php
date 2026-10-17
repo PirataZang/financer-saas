@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Company;
 use App\Service\BotActivationService;
 use Closure;
 use Illuminate\Http\Request;
@@ -14,7 +15,8 @@ use Symfony\Component\HttpFoundation\Response;
  *     closed when unset);
  *  2. the Telegram user (X-Telegram-User-Id, taken by the bot from Telegram's update) has
  *     activated the bot and wasn't revoked — skipped only by `bot:activation`.
- * The account becomes the activity-log causer, so every bot change is attributed.
+ * The account becomes the activity-log causer, so every bot change is attributed, and the request
+ * is scoped to the account's company (blocked while its license is inactive, like the web).
  */
 class BotMiddleware
 {
@@ -49,8 +51,14 @@ class BotMiddleware
                 return response()->json(['code' => 'BOT_NOT_ACTIVATED', 'message' => 'Bot não ativado para este usuário.'], 403);
             }
 
+            if (!$account->company?->isActive()) {
+                return response()->json(['code' => 'COMPANY_INACTIVE', 'message' => 'O acesso da sua empresa está suspenso ou expirado.'], 403);
+            }
+
             $request->attributes->set(self::ACCOUNT, $account);
             CauserResolver::setCauser($account);
+
+            return Company::as($account->company_id, fn () => $next($request));
         }
 
         return $next($request);

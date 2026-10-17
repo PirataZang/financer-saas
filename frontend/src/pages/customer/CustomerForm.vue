@@ -63,10 +63,10 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { apiFetch } from '@/services/api'
-import { lookupZipCode } from '@/services/zipCode'
+import { useZipCodeLookup } from '@/services/zipCode'
 import Input from '@/components/utils/Input.vue'
 import Select from '@/components/utils/Select.vue'
 import Switch from '@/components/utils/Switch.vue'
@@ -85,10 +85,6 @@ const error = ref('')
 const statusOptions = ref([])
 
 const numberInput = ref(null)
-const zipLoading = ref(false)
-const zipMessage = ref('')
-const zipError = ref(false)
-let lastZipLookup = ''
 
 const form = ref({
     name: '',
@@ -106,6 +102,8 @@ const form = ref({
     state: '',
     country: 'Brasil',
 })
+
+const { zipLoading, zipMessage, zipError, searchZipCode, markZipLoaded } = useZipCodeLookup(form, numberInput)
 
 const fetchStatuses = async () => {
     const response = await apiFetch('/customers/statuses')
@@ -127,58 +125,13 @@ const fetchCustomer = async () => {
             form.value[key] = data[key] ?? form.value[key]
         })
         // Loaded CEP is already resolved: don't overwrite a hand-edited address.
-        lastZipLookup = form.value.zip_code
+        markZipLoaded()
     } catch (err) {
         error.value = err.message
     } finally {
         loading.value = false
     }
 }
-
-// Fills the address from the CEP; on any failure the fields stay editable for manual entry.
-const searchZipCode = async () => {
-    const zipCode = form.value.zip_code || ''
-    zipError.value = false
-    zipMessage.value = ''
-
-    if (!zipCode || zipCode === lastZipLookup) return
-    if (zipCode.length !== 8) {
-        zipError.value = true
-        zipMessage.value = 'CEP inválido. Informe 8 dígitos.'
-        return
-    }
-
-    lastZipLookup = zipCode
-    zipLoading.value = true
-    const { address, error: lookupError } = await lookupZipCode(zipCode)
-    zipLoading.value = false
-
-    if (form.value.zip_code !== zipCode) return // CEP changed while loading
-
-    if (lookupError) {
-        zipError.value = true
-        zipMessage.value = lookupError
-        lastZipLookup = ''
-        return
-    }
-
-    form.value.street = address.street || form.value.street
-    form.value.neighborhood = address.neighborhood || form.value.neighborhood
-    form.value.city = address.city
-    form.value.state = address.state
-    form.value.country = address.country
-    zipMessage.value = 'Endereço preenchido pelo CEP. Confira e informe o número.'
-    // The CEP never brings the number: hand focus to it.
-    numberInput.value?.$el.querySelector('input')?.focus()
-}
-
-// Search as soon as the 8th digit is typed (blur also triggers it).
-watch(
-    () => form.value.zip_code,
-    (zipCode) => {
-        if (zipCode?.length === 8) searchZipCode()
-    },
-)
 
 const submitForm = async () => {
     error.value = ''

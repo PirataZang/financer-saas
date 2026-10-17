@@ -6,9 +6,9 @@ use App\Enums\TransactionSource;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\ValidationException;
@@ -20,7 +20,7 @@ use Illuminate\Validation\ValidationException;
 #[Fillable(['type', 'amount', 'description', 'category_id', 'date', 'status', 'source', 'external_id'])]
 class Transaction extends Model
 {
-    use Auditable, SoftDeletes;
+    use Auditable, BelongsToCompany, SoftDeletes;
 
     protected $table = 'finance_transactions';
 

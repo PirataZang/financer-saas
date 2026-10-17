@@ -65,3 +65,13 @@ test('grouped routes nest under their sidebar group, which hides when empty', ()
   assert.deepEqual(onlyTransactions[0].children.map((i) => i.route), ['/finance/transactions'])
   assert.deepEqual(menuTree(menuItems(financeRoutes, viewer)).map((i) => i.label), ['Usuários'])
 })
+
+test('restricted (meta.master) entries: masters only, whatever the permissions', () => {
+  const restricted = { path: '/restricted/company', meta: { master: true, menu: { label: 'Empresas', group: 'restricted' } } }
+  const everything = { master: false, permissions: ['users.view', 'users.create', 'dashboard.view'] }
+
+  assert.deepEqual(menuItems([restricted], everything), [])
+  assert.equal(canAccessRoute(everything, restricted), false)
+  assert.equal(menuTree(menuItems([restricted], master))[0].label, 'Restrita')
+  assert.equal(canAccessRoute(master, restricted), true)
+})

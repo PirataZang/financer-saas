@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Enums\CategoryType;
 use App\Enums\TransactionType;
 use App\Models\Category;
+use App\Models\Company;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 
@@ -79,7 +80,7 @@ class CategoryService
 
         return [
             'name' => [$required, 'string', 'min:2', 'max:60',
-                Rule::unique('finance_categories', 'name')->whereNull('deleted_at')->ignore($ignoreId)],
+                Rule::unique('finance_categories', 'name')->where('company_id', Company::current())->whereNull('deleted_at')->ignore($ignoreId)],
             'icon' => ['nullable', 'string', 'max:16'],
             'color' => ['sometimes', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'type' => ['sometimes', Rule::enum(CategoryType::class)],

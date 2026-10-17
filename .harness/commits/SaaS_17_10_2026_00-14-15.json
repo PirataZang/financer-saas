@@ -1,0 +1,484 @@
+{
+  "branch": "SaaS",
+  "created_at": "2026-10-17T03:14:15.873Z",
+  "author": {
+    "name": "Igor Fronza",
+    "email": "igorfronza20@gmail.com"
+  },
+  "parent": "e7daa889f661512217ebdc89e462ef537e464bc3",
+  "notes": "Pedido: melhorar a usabilidade do financeiro — totais na listagem, filtros rápidos de período (salvos na URL),\nlançamento rápido (valor em R$ com máscara, \"Salvar e lançar outra\", duplicar, efetivar em lote) e\nparcelas/recorrência.\n\nDecisões:\n- Totais = todas as linhas do filtro (não só a página), qualquer status; reusa FinanceDashboardService::totalsByType().\n- Efetivar em lote via PATCH /finance/transactions/status (um request): laço de PUT estouraria o rate limit (120/min).\n- Série (parcelado/mensal) só na web, tudo ou nada; parcelas futuras nascem pendentes; sobra de centavos na 1ª.\n  Sem vínculo entre parcelas (editar \"todas as próximas\" fica para quando for pedido).\n- Duplicar usa a data de hoje. \"Mês passado\" entrou em utils/period.js (vale também no dashboard).\n- Máscara money preenche da direita; Input.vue ganhou caret relativo ao fim para máscaras fromRight.\n- .filter-chip virou global (main.scss), saiu do ActivityLogModal.\n\nVerificação: backend 97 passed (4 novos no FinanceTest), frontend 12 pass, bot 10 pass, vite build ok;\nPlaywright só leitura (sem POST/PUT/PATCH/DELETE): chips, URL, totais, duplicar, máscara (1234567 → 12.345,67,\nbackspace), prévia das parcelas, voltar mantém filtros, 390px sem rolagem lateral, 0 erros de console.\n\n---\n\nPedido: aplicar no financial-bot tudo o que foi feito no saas-dev / skill create-crm — multi-empresa (SaaS),\ncolunas protegidas + model base, master só via banco, área Restrita › Empresas (licença por token, +30 dias ao\ngerar token), menu novo (toggle fixo, grupos como bloco, flyout no modo ícones), empresa e perfil no topo.\n\nDecisões:\n- Port por merge de 3 vias (template antes/depois × financial-bot); arquivos sem customização copiados.\n- Migration de empresas virou 000007 (000006 já era o financeiro); dados existentes → Empresa Padrão (id 1).\n  Tabelas de empresa: users, customers, activity_log, finance_categories, finance_transactions, telegram_accounts.\n- Unicidade por empresa: nome de categoria (Rule::unique com company_id) e (company_id, source, external_id).\n- Bot: conta do Telegram pertence a uma empresa; BotMiddleware escopa a requisição e devolve 403\n  COMPANY_INACTIVE com licença inativa. Código único de ativação → Empresa Padrão (por empresa quando houver 2ª).\n- Submenus unificados em MENU_GROUPS (finance + restricted com tom próprio), sem o objeto group do template.\n- Select do projeto mantido (multiple/clearable/loading) + limit e slots value/option/footer; o CompanySwitcher\n  ordena A→Z (o Select não reordena categorias).\n- Seeder: categorias iniciais por empresa; empresa nova começa sem categorias.\n\nVerificação: backend 118 passed (novos: bot isolado por empresa, categoria única por empresa), frontend 13 pass,\nbot 10 pass, vite build ok. Banco local migrado após backup (pg_dump); Playwright só leitura: topo, perfil,\nlista de empresas, financeiro, modo ícones, 390px sem rolagem lateral, 0 erros de console, 0 escritas.",
+  "stats": {
+    "files": 77,
+    "additions": 5023,
+    "deletions": 633
+  },
+  "files": [
+    {
+      "status": "M",
+      "path": "README.md",
+      "additions": 18,
+      "deletions": 4
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Attributes/ProtectedColumns.php",
+      "additions": 28,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Console/Commands/CustomerCommand.php",
+      "additions": 15,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Http/Controllers/ActivityLogController.php",
+      "additions": 6,
+      "deletions": 2
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/CompanyController.php",
+      "additions": 61,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Http/Controllers/CustomerController.php",
+      "additions": 8,
+      "deletions": 2
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Http/Controllers/TransactionController.php",
+      "additions": 27,
+      "deletions": 4
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Http/Controllers/UserController.php",
+      "additions": 11,
+      "deletions": 7
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Http/Middleware/BotMiddleware.php",
+      "additions": 9,
+      "deletions": 1
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Middleware/EnsureMaster.php",
+      "additions": 26,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Middleware/ResolveCompany.php",
+      "additions": 36,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Models/Category.php",
+      "additions": 2,
+      "deletions": 2
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Models/Company.php",
+      "additions": 110,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Models/Concerns/Auditable.php",
+      "additions": 5,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Models/Concerns/BelongsToCompany.php",
+      "additions": 49,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Models/Customer.php",
+      "additions": 2,
+      "deletions": 2
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Models/Model.php",
+      "additions": 55,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Models/Permission.php",
+      "additions": 0,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Models/TelegramAccount.php",
+      "additions": 3,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Models/Transaction.php",
+      "additions": 2,
+      "deletions": 2
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Models/User.php",
+      "additions": 19,
+      "deletions": 21
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/AuthService.php",
+      "additions": 22,
+      "deletions": 4
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/BotActivationService.php",
+      "additions": 9,
+      "deletions": 4
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/CategoryService.php",
+      "additions": 2,
+      "deletions": 1
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/CompanyService.php",
+      "additions": 136,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/FinanceDashboardService.php",
+      "additions": 3,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/TransactionService.php",
+      "additions": 98,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/UserService.php",
+      "additions": 17,
+      "deletions": 64
+    },
+    {
+      "status": "M",
+      "path": "backend/bootstrap/app.php",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/database/factories/CustomerFactory.php",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/database/factories/UserFactory.php",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/database/migrations/0001_01_01_000007_create_companies_table.php",
+      "additions": 78,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/database/seeders/DatabaseSeeder.php",
+      "additions": 37,
+      "deletions": 8
+    },
+    {
+      "status": "M",
+      "path": "backend/routes/api.php",
+      "additions": 52,
+      "deletions": 35
+    },
+    {
+      "status": "M",
+      "path": "backend/tests/Feature/AuthorizationTest.php",
+      "additions": 24,
+      "deletions": 33
+    },
+    {
+      "status": "M",
+      "path": "backend/tests/Feature/BotApiTest.php",
+      "additions": 18,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/tests/Feature/FinanceTest.php",
+      "additions": 82,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Feature/ProtectedColumnsTest.php",
+      "additions": 117,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/tests/Feature/PublicCustomerTest.php",
+      "additions": 33,
+      "deletions": 2
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Feature/TenancyTest.php",
+      "additions": 257,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/tests/Feature/UserTest.php",
+      "additions": 4,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "backend/tests/TestCase.php",
+      "additions": 10,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "bot/src/flows/activation.ts",
+      "additions": 1,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "design.md",
+      "additions": 120,
+      "deletions": 8
+    },
+    {
+      "status": "A",
+      "path": "frontend/package-lock.json",
+      "additions": 1174,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/layout/AppSidebar.vue",
+      "additions": 40,
+      "deletions": 8
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/layout/CompanySwitcher.vue",
+      "additions": 274,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/layout/SidebarMenuItem.vue",
+      "additions": 266,
+      "deletions": 8
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/layout/UserMenu.vue",
+      "additions": 333,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/ui/ActivityLogModal.vue",
+      "additions": 0,
+      "deletions": 25
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/utils/Input.vue",
+      "additions": 7,
+      "deletions": 2
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/utils/Select.vue",
+      "additions": 21,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/layouts/AppLayout.vue",
+      "additions": 91,
+      "deletions": 86
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/main.js",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/company/CompanyForm.vue",
+      "additions": 314,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/company/CompanyList.vue",
+      "additions": 181,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/company/license.js",
+      "additions": 8,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/customer/CustomerForm.vue",
+      "additions": 5,
+      "deletions": 52
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/customer/CustomerList.vue",
+      "additions": 0,
+      "deletions": 87
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/finance/TransactionForm.vue",
+      "additions": 95,
+      "deletions": 10
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/finance/TransactionList.vue",
+      "additions": 241,
+      "deletions": 13
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/user/UserForm.vue",
+      "additions": 3,
+      "deletions": 12
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/user/UserList.vue",
+      "additions": 0,
+      "deletions": 77
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/user/UserPermissions.vue",
+      "additions": 5,
+      "deletions": 14
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/permissions.js",
+      "additions": 11,
+      "deletions": 3
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/permissions.test.js",
+      "additions": 10,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/router/index.js",
+      "additions": 44,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/services/api.js",
+      "additions": 7,
+      "deletions": 5
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/services/zipCode.js",
+      "additions": 63,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/stores/auth.js",
+      "additions": 53,
+      "deletions": 16
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/styles/_colors.scss",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/styles/list.scss",
+      "additions": 87,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/styles/main.scss",
+      "additions": 32,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/utils/masks.js",
+      "additions": 18,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/utils/masks.test.js",
+      "additions": 14,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/utils/period.js",
+      "additions": 3,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/utils/period.test.js",
+      "additions": 2,
+      "deletions": 0
+    }
+  ],
+  "branch_history": {
+    "base": "main",
+    "merge_base": "e7daa889f661512217ebdc89e462ef537e464bc3",
+    "previous_commits": []
+  }
+}

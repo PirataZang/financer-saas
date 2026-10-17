@@ -6,15 +6,31 @@ const STORAGE_KEYS = {
   token: 'financial_bottoken',
   user: 'financial_botuser',
   expireAt: 'financial_botexpire_at',
+  // Company a master is working in (sent as X-Company-Id; the API ignores it for everyone else).
+  companyId: 'financial_botcompany_id',
 }
 
 const POLL_INTERVAL_MS = 60_000
+
+// Per-browser UI preferences (e.g. menu open/closed): not company data, so a company switch keeps them.
+export const PREFERENCE_PREFIX = 'financial_botpref_'
+
+// 403 from ResolveCompany: the user's company license is off. Ends the session with a notice.
+export async function isCompanyInactive(response) {
+  if (response.status !== 403) return false
+  const data = await response.clone().json().catch(() => ({}))
+  if (data.code !== 'COMPANY_INACTIVE') return false
+  const { swal } = await import('@/plugins/swal')
+  swal.toastError(data.message)
+  return true
+}
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: null,
     user: null,
     expireAt: null,
+    companyId: null,
     pollingTimer: null,
   }),
 
@@ -26,6 +42,15 @@ export const useAuthStore = defineStore('auth', {
     // Reactive: re-evaluates in templates whenever /auth/me refreshes the permissions.
     can(state) {
       return (permission) => can(state.user, permission)
+    },
+
+    // Headers of every authenticated call (apiFetch, /auth/me, logout).
+    headers(state) {
+      return {
+        Accept: 'application/json',
+        ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}),
+        ...(state.companyId ? { 'X-Company-Id': String(state.companyId) } : {}),
+      }
     },
 
     userInitials(state) {
@@ -43,6 +68,7 @@ export const useAuthStore = defineStore('auth', {
     restoreSession() {
       this.token = localStorage.getItem(STORAGE_KEYS.token)
       this.expireAt = localStorage.getItem(STORAGE_KEYS.expireAt)
+      this.companyId = localStorage.getItem(STORAGE_KEYS.companyId)
 
       const storedUser = localStorage.getItem(STORAGE_KEYS.user)
       this.user = storedUser ? JSON.parse(storedUser) : null
@@ -74,10 +100,27 @@ export const useAuthStore = defineStore('auth', {
       this.token = null
       this.user = null
       this.expireAt = null
+      this.companyId = null
 
-      localStorage.removeItem(STORAGE_KEYS.token)
-      localStorage.removeItem(STORAGE_KEYS.user)
-      localStorage.removeItem(STORAGE_KEYS.expireAt)
+      Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key))
+    },
+
+    // Master only. Switching company drops every client-side cache (in-memory stores, page
+    // state, sessionStorage, stored data other than the session itself) by reloading the app:
+    // nothing from the previous company can leak into the next screen. The API scopes every
+    // query to the company sent in X-Company-Id.
+    switchCompany(companyId) {
+      if (!this.user?.master || String(companyId) === String(this.user.company?.id)) return
+
+      // The session survives (user is re-fetched from /auth/me right after the reload).
+      const keep = new Set([STORAGE_KEYS.token, STORAGE_KEYS.expireAt, STORAGE_KEYS.user])
+      Object.keys(localStorage)
+        .filter((key) => !keep.has(key) && !key.startsWith(PREFERENCE_PREFIX))
+        .forEach((key) => localStorage.removeItem(key))
+      sessionStorage.clear()
+      localStorage.setItem(STORAGE_KEYS.companyId, String(companyId))
+
+      window.location.assign('/')
     },
 
     async login(email, password) {
@@ -101,12 +144,7 @@ export const useAuthStore = defineStore('auth', {
     async logout({ redirect = true } = {}) {
       if (this.token) {
         try {
-          await fetch(`${API_URL}/auth/logout`, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${this.token}`,
-            },
-          })
+          await fetch(`${API_URL}/auth/logout`, { method: 'POST', headers: this.headers })
         } catch {
           // Ignora falha de rede no logout remoto.
         }
@@ -124,14 +162,9 @@ export const useAuthStore = defineStore('auth', {
 
     // Pulls the current user + permissions; keeps the UI in step with grants/revokes.
     async refreshUser() {
-      const response = await fetch(`${API_URL}/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-          Accept: 'application/json',
-        },
-      })
+      const response = await fetch(`${API_URL}/auth/me`, { headers: this.headers })
 
-      if (response.status === 401) {
+      if (response.status === 401 || (await isCompanyInactive(response))) {
         await this.logout()
         return false
       }
@@ -140,6 +173,10 @@ export const useAuthStore = defineStore('auth', {
 
       this.user = await response.json()
       localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(this.user))
+      // The API answers with the company it actually used (an unknown id falls back).
+      this.companyId = this.user.master ? String(this.user.company.id) : null
+      if (this.companyId) localStorage.setItem(STORAGE_KEYS.companyId, this.companyId)
+      else localStorage.removeItem(STORAGE_KEYS.companyId)
       return true
     },
 

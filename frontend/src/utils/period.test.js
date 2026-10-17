@@ -9,6 +9,8 @@ test('presets resolve to local inclusive ranges', () => {
   assert.deepEqual(periodRange('7d', today), { from: '2026-01-09', to: '2026-01-15' })
   assert.deepEqual(periodRange('30d', today), { from: '2025-12-17', to: '2026-01-15' })
   assert.deepEqual(periodRange('month', today), { from: '2026-01-01', to: '2026-01-15' })
+  assert.deepEqual(periodRange('lastMonth', today), { from: '2025-12-01', to: '2025-12-31' })
+  assert.deepEqual(periodRange('lastMonth', new Date(2026, 2, 10)), { from: '2026-02-01', to: '2026-02-28' })
   assert.deepEqual(periodRange('3m', today), { from: '2025-11-01', to: '2026-01-15' })
   assert.deepEqual(periodRange('year', today), { from: '2026-01-01', to: '2026-01-15' })
   assert.equal(periodRange('custom', today), null)

@@ -44,7 +44,8 @@ Reutilize antes de criar algo novo (`frontend/src/components/utils/` e `ui/`):
   (vermelho — único lugar do sistema onde vermelho aparece).
 - **Input / TextArea / Switch** (`utils/`) — todos usam `defineModel`, prop `label`, mesmo `field-shell`
   visual (borda, foco com anel `--color-primary-soft`). `Input` suporta `mask` (`cpf`, `cnpj`, `cpf-cnpj`,
-  `phone`, `cep`) via `frontend/src/utils/masks.js`.
+  `phone`, `cep`, `money`) via `frontend/src/utils/masks.js`. `money` guarda o decimal da API (`"1234.56"`),
+  mostra `1.234,56` e preenche da direita (centavos primeiro); campo de valor em R$ usa ele, nunca `type="number"`.
 - **Select** (`utils/Select.vue`) — dropdown próprio (não `<select>` nativo): `defineModel`, `label`,
   `options` = `[{ value, label, icon?, color? }]`, `placeholder` vira a opção vazia; teclado completo
   (↑↓, Enter, Esc, Home/End, digitar para pular) e `@change`. Opção com `color` aparece como
@@ -54,11 +55,18 @@ Reutilize antes de criar algo novo (`frontend/src/components/utils/` e `ui/`):
   herda o resto por `$attrs` — ex. `components/finance/CategorySelect.vue`:
   `<CategorySelect v-model="ids" type="expense" multiple clearable />`. Crie `UserSelect`, `CustomerSelect`
   etc. do mesmo jeito; nunca reimplemente busca/múltipla seleção num componente específico.
+  Listas longas: `limit` (máximo exibido, com aviso "Mostrando N de M") — ex.: `CompanySwitcher` usa `searchable :limit="7"` (ordena as opções A→Z antes).
+  Slots opcionais: `value` ({ selected }) e `option` ({ option, selected }) para gatilho/opções próprios (opções
+  podem levar campos extras, ex. `initials`), `footer` ({ close }) para uma ação no fim da lista.
 - **StatusBadge** (`ui/StatusBadge.vue`) — pill de enum: `label`, `color` (tom: `info | success | warning |
   danger | neutral`, mapeado para `--color-*`/`--color-*-soft`, **ou** um hex escolhido pelo usuário, como a cor
   de uma categoria financeira) e `icon` (classe Font Awesome ou emoji). O enum no backend define
   `color()`/`icon()` (ex. `CustomerStatus`); vermelho (`danger`) só para estados de erro/destrutivos.
 - **Campo booleano** (ativo/inativo, sim/não) sempre usa `Switch` — nunca checkbox nativo.
+- **Listagens** — estrutura `.list-toolbar` (`__filters` + `__actions`) + `.grid-wrap` com o `AgGrid`; estilos
+  globais em `styles/list.scss` (não copie para o `<style>` da página).
+- **Endereço por CEP** — `useZipCodeLookup(form, numberInput)` de `services/zipCode.js` (busca ao 8º dígito ou
+  no blur, preenche rua/bairro/cidade/UF/país, foca o número). Usado em Clientes e Empresas.
 - **AgGrid** (`utils/AgGrid.vue`) — grid padrão para listagens, com paginação customizada embutida (não
   usar a paginação nativa do AG Grid). `columnTypes` prontos: `date`, `datetime`, `money`, `boolean` (ícone
   ✓/✕; rótulos via `cellRendererParams: { trueLabel, falseLabel }`) e `badge` (enum como `StatusBadge`,
@@ -109,14 +117,26 @@ página com fade), `.page-header`, `.form-grid` + `.col-1`…`.col-12` (grid 12 
 
 Controller fino → Service → Model. Nunca lógica de negócio no Controller.
 
-- **Model**: atributos `#[Fillable([...])]` / `#[Hidden([...])]`, casts via método `casts()`.
+- **Model**: estende **`App\Models\Model`** (nunca o `Model` do Eloquent direto — `ProtectedColumnsTest`
+  falha), atributos `#[Fillable([...])]` / `#[Hidden([...])]`, casts via método `casts()`.
+- **Colunas protegidas** — dado sensível (token, flag de privilégio, segredo de integração) vai em
+  `#[ProtectedColumns(['token'], locked: ['master'])]`, não em `#[Hidden]`:
+  - nunca sai em resposta (toArray/JSON); o backend só expõe de propósito com `makeVisible()` (ex.: token da
+    empresa para master);
+  - nunca é preenchida pelos dados da requisição — `fill/create/update` ignoram, mesmo se estiver no
+    `#[Fillable]` ou na validação; o backend grava com `forceFill()` (ex.: token de sessão no login);
+  - nunca entra no log de auditoria (`Auditable`);
+  - `locked`: além disso, **nenhuma requisição HTTP altera** por caminho nenhum (nem `forceFill`) — só o banco
+    ou o console (seeders, artisan, tinker). Hoje: `users.master`.
+  Em uso: `User` (`token`; `master` locked), `Company` (`token`). `password` segue em `#[Hidden]` porque o
+  cadastro de usuário precisa preenchê-lo.
 - **Service** (`app/Service/`): uma classe por recurso, métodos `list/index/create/update/delete` recebendo
   arrays já validados. Ex.: `App\Service\UserService`.
 - **Controller**: valida (`$request->validate`) e delega ao Service, devolve `response()->json(...)`.
-- **Rotas** (`routes/api.php`): REST simples dentro do grupo `Route::middleware(['auth', 'permission'])`, com `->prefix('recurso')`: `GET /`,
+- **Rotas** (`routes/api.php`): REST simples dentro do grupo `Route::middleware(['auth', 'company', 'permission'])`, com `->prefix('recurso')`: `GET /`,
   `GET /{id}`, `POST /`, `PUT /{id}`, `DELETE /{id}`. Rotas mais específicas (ex. `/summary`) sempre
   declaradas antes das genéricas com parâmetro (`/{id}`) no mesmo grupo.
-- Novo recurso → Model + migration + Service + Controller + bloco de rotas, seguindo exatamente o padrão de
+- Novo recurso → Model **com `BelongsToCompany`** + migration **com `company_id`** (seção 14) + Service + Controller + bloco de rotas, seguindo exatamente o padrão de
   `App\Http\Controllers\UserController` / `App\Service\UserService`. Exemplo completo de módulo de
   negócio: **Clientes** (`Customer`, `CustomerService`, `CustomerController`, `pages/customer/`).
 - **Enums** (`app/Enums/`): backed enum com valores em inglês + `label()` em português + `color()`/`icon()`
@@ -129,7 +149,8 @@ Controller fino → Service → Model. Nunca lógica de negócio no Controller.
 - **APIs externas**: só dentro de um Service dedicado (ex. `App\Service\ZipCodeService` → ViaCEP), com
   `Http::timeout`, tratamento de indisponibilidade/resposta inválida e cache; config em
   `config/services.php`. O front chama a nossa API, nunca o provider — trocar de provider = mudar o Service.
-- **Rotas públicas**: `Route::prefix('public')->middleware('throttle:public')` em `routes/api.php`; mesmas
+- **Rotas públicas**: `Route::prefix('public/{token}')->middleware('throttle:public')` em `routes/api.php`; o
+  token da empresa diz a qual empresa o registro pertence (token inválido/revogado/expirado = 404). Mesmas
   regras de validação/domínio da rota autenticada, sem aceitar campos internos (ex. status) e devolvendo só
   uma confirmação. Ações públicas entram na lista explícita do `AuthorizationTest`.
 
@@ -141,6 +162,24 @@ Controller fino → Service → Model. Nunca lógica de negócio no Controller.
   trata 401 deslogando). Chame sempre **sem** o prefixo: `apiFetch('/users')` — o `API_URL`
   (vindo de `VITE_API_URL`) é prefixado lá dentro, então trocar o prefixo da API é só mudar o `.env`.
 - Nunca `fetch()` direto numa página — sempre `apiFetch`.
+- **Menu lateral** (`AppLayout` + `AppSidebar` + `SidebarMenuItem`): abre/fecha **só** pelo botão do topo
+  (sem hover). Aberto = fixo ao lado do conteúdo; recolhido = trilho de ícones. A escolha fica no
+  localStorage com o prefixo `PREFERENCE_PREFIX` (`stores/auth.js`), que a troca de empresa preserva — use
+  o mesmo prefixo para qualquer preferência de tela. Até 900px o menu aberto flutua sobre o conteúdo com
+  fundo escurecido e fecha ao navegar.
+  - Grupos (`meta.menu.group` nas rotas) começam abertos: título + subitens num **único bloco** (contorno e
+    fundo do tom do grupo; neutro sem `tone`), subitens recuados numa linha-guia de 1px; página atual = pílula
+    branca no subitem (o título do grupo nunca leva o fundo de ativo). A seta recolhe.
+  - No trilho: item simples mostra o nome ao passar o mouse/focar; grupo abre um painel flutuante com os
+    subitens (hover, clique ou Enter — o foco entra no 1º subitem; Esc fecha e devolve o foco). Os painéis
+    são teleportados para o `body` (o painel do menu tem `overflow: hidden`).
+  - Foco por teclado sempre com anel `--color-primary`, nunca o contorno padrão do navegador.
+- **Topo** (`AppLayout`): à esquerda o botão do menu e a busca global; à direita `CompanySwitcher` e
+  `UserMenu`. O perfil abre um cartão (popover, **sem** fundo/desfoque — só sombra e o botão realçado com anel):
+  avatar, nome, e-mail, selo do papel (`Master` em âmbar / `Usuário` neutro) e "Sair da conta" em vermelho.
+  Esc ou clique fora fecha e devolve o foco. Até 900px só os avatares aparecem; até 480px os popovers ocupam a
+  largura ao lado do trilho do menu (o topo fica numa camada abaixo do menu lateral). Item novo no cartão só
+  com função real (ex.: "Preferências" quando existir a tela).
 
 ## 7. Auditoria (histórico de alterações)
 
@@ -175,13 +214,21 @@ esconde; quem bloqueia é a API.
   `CheckPermission` aplica. Rota de controller sem o atributo quebra o teste
   `AuthorizationTest::test_every_controller_route_declares_a_permission_or_is_explicitly_public`.
 - **Usuário**: `hasPermission`, `givePermission`, `revokePermission`, `syncPermissions`, `permissionKeys`
-  (cache por usuário, invalidado em toda alteração). `master` não é atribuível pela API.
+  (cache por usuário, invalidado em toda alteração).
+- **Master** é conta da plataforma, criada e alterada **só no banco** (`UPDATE users SET master = true ...`):
+  nenhuma rota cria, promove, edita, exclui ou lista master — nem outro master. Masters ficam na empresa 1.
+  `master` é coluna protegida **locked** (seção 5): não aparece em nenhuma resposta de usuário (só o `/auth/me`
+  informa o do próprio usuário), não existe nas telas de usuário e nenhuma requisição consegue alterá-la.
 - **Frontend**: rota com `meta.permission` (guard bloqueia) e `meta.menu = { label, icon, description,
   keywords, module, order, sidebar? }` (sidebar + busca global, já filtrados). Botões: `v-can="'leads.create'"`
   ou `$can(...)` / `auth.can(...)`. As permissões vêm de `/auth/me` (no load e no poll de 60s).
 - **Novo módulo**: `permission create` para cada ação → `#[Permission]` nos métodos → `meta` nas rotas →
   `v-can` nos botões. A aba Permissões do usuário aparece sozinha com o módulo novo.
-- Um não-master só concede/remove permissões que ele próprio tem, e não altera/exclui um master.
+- Um não-master só concede/remove permissões que ele próprio tem.
+- **Área restrita** (masters, sem chave de permissão — não dá para conceder): rota da API dentro de
+  `Route::middleware('master')`; rota do front com `meta.master: true`. No menu entra como filho do pai
+  **Restrita** (`meta.menu.group = RESTRICTED` em `router/index.js`: ícone de alerta, tom âmbar
+  `--color-warning-text`).
 
 ## 9. Rate limiting e IP do cliente
 
@@ -215,6 +262,16 @@ todos por `TransactionService::create($data, TransactionSource, ?externalId)`.
 - **Enums**: `TransactionType`, `TransactionStatus`, `TransactionSource`, `CategoryType` — nova origem
   (ex. CSV) = novo case em `TransactionSource` + um ponto de entrada que chame o `TransactionService`.
 - **API**: `/api/finance/{dashboard,categories,transactions}` com `#[Permission('finance.*')]`.
+  - `GET transactions` devolve, além da página, `totals` (receitas, despesas, saldo e nº de pendentes de
+    **todas** as linhas do filtro, qualquer status) — reusa `FinanceDashboardService::totalsByType()`.
+  - `POST transactions` aceita `repeat` (`installments` | `monthly`) + `repeat_count` (2–120), só na web:
+    `TransactionService::createSeries()` cria a série inteira numa transação de banco, mês a mês sem estourar
+    (31/01 → 28/02). Parcelado divide o total em centavos (a sobra vai na 1ª) e numera "Desc (1/N)"; mensal
+    repete o valor. Lançamentos com data futura nascem `pending`. Não há vínculo entre as parcelas: depois de
+    criadas, cada uma se edita sozinha.
+  - `PATCH transactions/status` (`ids[]` até 100 + `status`, permissão `finance.transaction.update`): troca de
+    status em lote, model a model (cada mudança entra no histórico). Ação em lote = um endpoint, nunca um laço
+    de requisições no front (o rate limit `default` é 120/min).
 - **Filtros**: um vocabulário só, `Transaction::scopeFiltered()` (from, to, type, category_id, category_ids[],
   source, status, min/max_amount, search) — usado pela listagem, pelo dashboard e pela exportação. No dashboard,
   `status` = `paid` (padrão) | `pending` | `all`, e os filtros valem também para o saldo anterior.
@@ -224,7 +281,15 @@ todos por `TransactionService::create($data, TransactionSource, ?externalId)`.
   fixo, autofiltro) e Categorias. Texto do usuário entra sempre como `StringCell` — nunca vira fórmula.
 - **Telas**: `pages/finance/` — `FinanceDashboard` (filtros de período/categorias/origem/status + exportar;
   gráficos em `dashboardCharts.js`, uma pergunta por gráfico: novo gráfico = nova entrada no array), `CategoryList` (cards) / `CategoryForm`, `TransactionList` / `TransactionForm`.
-  Presets de período em `utils/period.js`.
+  Presets de período em `utils/period.js` (inclui "Mês passado", o único intervalo fechado).
+- **TransactionList**: chips de período (`.filter-chip`, global em `main.scss`) + "Tudo"; editar uma data à
+  mão vira personalizado. Período, filtros e página ficam na URL (`router.replace`): voltar do formulário,
+  recarregar ou compartilhar o link mostra a mesma visão — o form volta com `router.back()` quando veio da
+  lista. Barra de totais acima da grade (o card de lançamentos filtra as pendentes). Ações: Duplicar (abre o
+  form com `?duplicate=<id>`, data de hoje) e Efetivar (pendentes selecionadas → `PATCH status`).
+- **TransactionForm**: "Salvar e lançar outra" mantém tipo, data, categoria e status e limpa valor/descrição
+  (foco volta no valor). Na inclusão, "Repetição" (não repete / parcelado / todo mês) com prévia do valor
+  das parcelas.
 
 ## 12. Bot do Telegram (`bot/`)
 
@@ -235,6 +300,9 @@ banco**: só `/api/bot/*`.
   que é o bot com `Authorization: Bearer BOT_API_TOKEN` (comparação constante, falha fechada se vazio);
   (2) o usuário do Telegram (`X-Telegram-User-Id`) precisa ter ativado o bot e não estar revogado
   (`telegram_accounts.revoked_at`). A `TelegramAccount` vira o *causer* do activity log.
+- **Empresa**: cada `TelegramAccount` pertence a uma empresa; o middleware escopa a requisição a ela
+  (`Company::as`) e bloqueia com 403 `COMPANY_INACTIVE` se a licença estiver inativa (o bot mostra a mensagem).
+  Hoje o código único de ativação entra na Empresa Padrão; código por empresa quando outra empresa usar o bot.
 - **Ativação**: `BotActivationService` é o único lugar que valida o código (hoje `TELEGRAM_ACTIVATION_CODE`).
   Códigos por usuário/expiração/vínculo com `User` trocam só o `codeIsValid()`; revogação já é respeitada.
 - **Limites** (`config/rate-limit.php`, chaveados por usuário do Telegram): `bot`, `bot-activation`
@@ -264,3 +332,47 @@ banco**: só `/api/bot/*`.
 - [ ] Nenhum botão, ícone ou item de menu decorativo sem função real.
 - [ ] Endpoint novo tem `#[Permission]`; rota nova tem `meta.permission`; ação protegida usa `v-can`.
 - [ ] Endpoint público tem `throttle:public` e não aceita campos internos; chamada externa passa por Service.
+- [ ] Tabela nova tem `company_id` NOT NULL e o model usa `BelongsToCompany` (o `TenancyTest` falha se não).
+- [ ] Model novo estende `App\Models\Model`; dado sensível vai em `#[ProtectedColumns]`, nunca só em `#[Hidden]`.
+- [ ] `unique`/`exists` de dados de empresa filtram pela empresa (`Rule::unique('t')->where('company_id', Company::current())`).
+- [ ] Cache de dado de empresa leva o id da empresa na chave.
+
+## 14. Multi-empresa (SaaS)
+
+Todo registro pertence a uma empresa (`companies`). **Não existe acesso global**: a empresa 1
+("Empresa Padrão", criada pela migration `000007`; os dados que já existiam foram para ela) sempre existe, não pode ser excluída e recebe os masters.
+
+- **Isolamento** — trait `App\Models\Concerns\BelongsToCompany` em todo model de empresa:
+  - escopo global filtra por `Company::current()`; **fail-closed**: sem empresa atual a consulta não traz
+    nada (nunca "todas");
+  - `company_id` nunca é `fillable`: ao criar vale a empresa atual (o que vier na requisição é ignorado) e
+    depois não muda;
+  - registro de outra empresa responde **404, igual a um id inexistente** — nada indica que ele existe.
+  - O banco garante o resto: `company_id` NOT NULL + FK. `TenancyTest` falha se uma tabela nova não tiver
+    `company_id` (ou não estiver na lista de tabelas globais) ou se um model não usar a trait.
+- **Empresa atual** — middleware `company` (`ResolveCompany`): vem sempre do usuário logado. Só um master
+  troca, mandando `X-Company-Id` (id desconhecido → volta para a empresa dele). Console/seeders/jobs:
+  `Company::as($id, fn () => ...)` (restaura a anterior no fim). Antes de existir empresa (login, busca do
+  token): `User::withoutGlobalScope('company')`. **Atenção:** seeder com `WithoutModelEvents` não roda o
+  `creating` da trait — informe a empresa (`->for($company)`).
+- **Licença** — empresa ativa = tem `token` **e** hoje ≤ `expires_at` (vazio = não expira) e não excluída.
+  Inativa: os usuários dela recebem 403 `COMPANY_INACTIVE` em toda requisição (e no login) na hora; o front
+  encerra a sessão com aviso. Revogar = apagar o token; gerar novo token reativa e invalida o anterior —
+  e, se a empresa tem data de expiração, renova para **hoje + 30 dias** (sem data continua sem expiração). No
+  cadastro a data digitada é mantida (a renovação é só a ação "Gerar token").
+  Masters acessam qualquer empresa, mesmo inativa.
+- **Unicidade** — dados de negócio são únicos **por empresa** (o mesmo cliente pode existir em duas). O
+  e-mail de usuário é o login, então é único no sistema; a mensagem de duplicado não diz que existe (não
+  revela outra empresa).
+- **Troca de empresa** (`CompanySwitcher`, no topo, à esquerda do perfil): pílula com as iniciais e o nome da
+  empresa atual (âmbar + "Licença inativa" quando bloqueada). Só master abre a lista (`Select` com `searchable
+  :limit="7"`, opções com iniciais, rodapé "Gerenciar empresas"). Trocar grava o id, limpa localStorage (menos
+  a sessão e as preferências de tela) e sessionStorage e recarrega o app — nenhum estado da empresa anterior
+  sobra. Usuário comum vê a pílula sem ação.
+- **Telas** — Restrita › Empresas (`pages/company/`): cadastro (CPF/CNPJ com dígito verificador, endereço
+  com CEP), licença (expira em, token com copiar/gerar/revogar) e histórico. Exclusão é soft delete.
+- **Financeiro** — categorias, transações e contas do Telegram são da empresa: nome de categoria é único
+  por empresa, `external_id` (idempotência) também (`company_id, source, external_id`). Categorias iniciais
+  do seeder entram por empresa; empresa nova começa sem categorias (cadastro em Financeiro › Categorias).
+- **Segurança extra** — token de sessão salvo como hash sha256 (vazamento da tabela `users` não entrega
+  sessões); `/api/status` só para master; tokens e `master` são colunas protegidas (seção 5).

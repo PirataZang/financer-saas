@@ -1,10 +1,5 @@
 <template>
-  <aside
-    class="sidebar"
-    :class="{ visible, expanded: isExpanded }"
-    @mouseenter="hovered = true"
-    @mouseleave="hovered = false"
-  >
+  <aside class="sidebar" :class="{ visible, expanded: isExpanded }">
     <div class="sidebar__panel">
       <div class="brand">
         <div class="brand__mark" aria-hidden="true"><i class="fa-solid fa-chart-line" /></div>
@@ -26,6 +21,7 @@
           />
         </ul>
       </nav>
+
     </div>
   </aside>
 </template>
@@ -37,17 +33,19 @@ import { useAuthStore } from '@/stores/auth'
 import { menuItems as allowedMenuItems, menuTree } from '@/permissions'
 import SidebarMenuItem from './SidebarMenuItem.vue'
 
+// Open/closed is owned by AppLayout (topbar toggle, remembered per browser). Expanded = fixed
+// next to the content; compact = icon rail, where groups open as flyouts (SidebarMenuItem).
 const props = defineProps({
   visible: { type: Boolean, default: true },
+  expanded: { type: Boolean, default: false },
 })
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
-const hovered = ref(false)
 const openKeys = ref(new Set())
 
-const isExpanded = computed(() => props.visible && hovered.value)
+const isExpanded = computed(() => props.visible && props.expanded)
 
 // Itens vêm do meta.menu das rotas (router/index.js), já filtrados pela permissão
 // do usuário — para um novo menu, declare meta.permission + meta.menu na rota;
@@ -56,6 +54,7 @@ const toSidebarItem = (item) => ({
   name: item.label,
   route: item.route,
   icon: `<i class="${item.icon}"></i>`,
+  tone: item.tone,
   children: (item.children || []).map(toSidebarItem),
 })
 
@@ -80,6 +79,22 @@ const toggleOpen = (key) => {
   else next.add(key)
   openKeys.value = next
 }
+
+// Groups start open so their submenu shows in the menu; the chevron still collapses them.
+const knownGroups = new Set()
+watch(
+  menuItems,
+  (items) => {
+    const next = new Set(openKeys.value)
+    items.filter(hasChildren).forEach((item) => {
+      if (knownGroups.has(itemKey(item))) return
+      knownGroups.add(itemKey(item))
+      next.add(itemKey(item))
+    })
+    openKeys.value = next
+  },
+  { immediate: true },
+)
 
 watch(
   () => route.path,
@@ -113,6 +128,12 @@ watch(
     flex-basis: $sidebar-rail;
     width: $sidebar-rail;
   }
+
+  // Expanded is fixed: it takes its width from the content instead of covering it.
+  &.visible.expanded {
+    flex-basis: $sidebar-width;
+    width: $sidebar-width;
+  }
 }
 
 .sidebar__panel {
@@ -135,6 +156,17 @@ watch(
 
   .sidebar.expanded & {
     width: $sidebar-width;
+  }
+}
+
+// Small screens: the expanded menu floats over the content (AppLayout adds the backdrop).
+@media (max-width: 900px) {
+  .sidebar.visible.expanded {
+    flex-basis: $sidebar-rail;
+    width: $sidebar-rail;
+  }
+
+  .sidebar.expanded .sidebar__panel {
     box-shadow: $shadow-sidebar;
   }
 }

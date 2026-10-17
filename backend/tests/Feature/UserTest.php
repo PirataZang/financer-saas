@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Service\PermissionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -12,7 +13,9 @@ class UserTest extends TestCase
 
     private function actingUser(): array
     {
-        $user = User::factory()->master()->create(['password' => 'secret123']);
+        app(PermissionService::class)->sync();
+        $user = User::factory()->create(['password' => 'secret123']);
+        $user->syncPermissions(['users.view', 'users.create', 'users.update', 'users.delete']);
 
         $token = $this->postJson('/api/auth/login', [
             'email' => $user->email,

@@ -6,6 +6,7 @@ export const PERIODS = [
   { value: '7d', label: '7 dias' },
   { value: '30d', label: '30 dias' },
   { value: 'month', label: 'Este mês' },
+  { value: 'lastMonth', label: 'Mês passado' },
   { value: '3m', label: 'Últimos 3 meses' },
   { value: 'year', label: 'Este ano' },
   { value: 'custom', label: 'Personalizado' },
@@ -21,6 +22,8 @@ export function periodRange(key, today = new Date()) {
   const y = today.getFullYear()
   const m = today.getMonth()
   const d = today.getDate()
+  // The only closed range: day 0 of this month is the last day of the previous one.
+  if (key === 'lastMonth') return { from: toDateString(new Date(y, m - 1, 1)), to: toDateString(new Date(y, m, 0)) }
   const from = {
     today: new Date(y, m, d),
     '7d': new Date(y, m, d - 6),

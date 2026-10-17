@@ -15,6 +15,9 @@ import CategoryList from '@/pages/finance/CategoryList.vue'
 import CategoryForm from '@/pages/finance/CategoryForm.vue'
 import TransactionList from '@/pages/finance/TransactionList.vue'
 import TransactionForm from '@/pages/finance/TransactionForm.vue'
+import CompanyList from '@/pages/company/CompanyList.vue'
+import CompanyForm from '@/pages/company/CompanyForm.vue'
+
 
 // Single source for navigation: meta.permission protects the route (guard), and
 // meta.menu puts it in the sidebar and global search, filtered by the same permission.
@@ -234,6 +237,47 @@ const routes = [
         component: UserForm,
         props: true,
         meta: { permission: 'users.update' },
+      },
+      {
+        path: 'restricted/company',
+        name: 'CompanyList',
+        component: CompanyList,
+        meta: {
+          master: true,
+          menu: {
+            label: 'Empresas',
+            icon: 'fa-solid fa-building',
+            description: 'Empresas clientes, dados cadastrais e licença de acesso',
+            keywords: ['restrita', 'master', 'empresa', 'cnpj', 'licença', 'token', 'tenant'],
+            module: 'Restrita',
+            order: 900,
+            group: 'restricted',
+          },
+        },
+      },
+      {
+        path: 'restricted/company/form',
+        name: 'CompanyCreate',
+        component: CompanyForm,
+        meta: {
+          master: true,
+          menu: {
+            label: 'Nova empresa',
+            icon: 'fa-solid fa-building-circle-check',
+            description: 'Cadastrar uma empresa cliente',
+            keywords: ['cadastrar', 'incluir', 'empresa', 'cnpj'],
+            module: 'Restrita',
+            order: 901,
+            sidebar: false,
+          },
+        },
+      },
+      {
+        path: 'restricted/company/form/:id',
+        name: 'CompanyEdit',
+        component: CompanyForm,
+        props: true,
+        meta: { master: true },
       },
       {
         path: 'forbidden',

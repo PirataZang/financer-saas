@@ -155,31 +155,6 @@ const formatDate = (value) => {
   gap: 8px;
 }
 
-.filter-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--color-border);
-  background: #ffffff;
-  color: var(--color-text-secondary);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-
-  &:hover {
-    background: var(--color-bg-muted);
-  }
-
-  &.is-active {
-    background: var(--color-info);
-    border-color: var(--color-info);
-    color: #ffffff;
-  }
-}
-
 .tab-loading,
 .empty-note {
   display: flex;

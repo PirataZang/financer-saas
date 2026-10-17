@@ -11,6 +11,7 @@ use App\Service\FinanceExportService;
 use App\Service\TransactionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class TransactionController extends Controller
@@ -28,7 +29,10 @@ class TransactionController extends Controller
         $filters = $request->validate($this->transactionService->filterRules());
         $perPage = min((int) $request->input('per_page', 15), 100);
 
-        return response()->json($this->transactionService->list($filters, $perPage));
+        return response()->json([
+            ...$this->transactionService->list($filters, $perPage)->toArray(),
+            'totals' => $this->transactionService->totals($filters),
+        ]);
     }
 
     /**
@@ -51,14 +55,33 @@ class TransactionController extends Controller
     }
 
     /**
-     * Web entries are always `manual`; other sources have their own entry points.
+     * Web entries are always `manual`; other sources have their own entry points. With
+     * `repeat` (installments | monthly) + `repeat_count` it creates the whole series and returns the 1st.
      */
     #[Permission('finance.transaction.create')]
     public function create(Request $request): JsonResponse
     {
-        $validated = $request->validate($this->transactionService->rules());
+        $validated = $request->validate([...$this->transactionService->rules(), ...$this->transactionService->repeatRules()]);
+        $repeat = Arr::pull($validated, 'repeat');
+        $count = Arr::pull($validated, 'repeat_count');
 
-        return response()->json($this->transactionService->create($validated), 201);
+        $transaction = $repeat
+            ? $this->transactionService->createSeries($validated, $repeat, $count)
+            : $this->transactionService->create($validated);
+
+        return response()->json($transaction, 201);
+    }
+
+    /**
+     * Bulk status change for the list's selection (ids[] + status).
+     */
+    #[Permission('finance.transaction.update')]
+    public function status(Request $request): JsonResponse
+    {
+        $validated = $request->validate($this->transactionService->statusRules());
+        $updated = $this->transactionService->setStatus($validated['ids'], TransactionStatus::from($validated['status']));
+
+        return response()->json(['updated' => $updated]);
     }
 
     #[Permission('finance.transaction.update')]

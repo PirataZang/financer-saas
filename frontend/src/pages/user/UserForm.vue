@@ -28,19 +28,16 @@
                         <Input v-model="form.email" label="Endereço de E-mail" type="email" placeholder="exemplo@empresa.com" required />
                     </div>
 
-                    <Input :class="auth.user?.master ? 'col-8' : 'col-10'" v-model="form.password" :label="passwordLabel" type="password" :required="!isEdit" placeholder="Mínimo 8 caracteres..." />
+                    <Input class="col-10" v-model="form.password" :label="passwordLabel" type="password" :required="!isEdit" placeholder="Mínimo 8 caracteres..." />
 
+                    <!-- No master option: master accounts exist only in the database (design.md §8). -->
                     <Switch class="col-2" v-model="form.active" label="Situação" :text-label="form.active ? 'Ativo' : 'Inativo'" />
-
-                    <!-- Only a master can make someone master (the API enforces the same). -->
-                    <Switch v-if="auth.user?.master" class="col-2" v-model="form.master" label="Master" :text-label="form.master ? 'Acesso total' : 'Não'" />
                 </div>
 
                 <UserPermissions
                     v-if="canManagePermissions && activeTab === 'permissions'"
                     v-model="form.permissions"
                     :catalog="catalog"
-                    :master="form.master"
                 />
 
                 <div v-if="error" class="form-error" style="margin-top: 16px">
@@ -81,7 +78,6 @@ const form = ref({
     email: '',
     password: '',
     active: true,
-    master: false,
     permissions: [],
 })
 
@@ -115,7 +111,6 @@ const fetchUser = async () => {
         form.value.active = data.active ?? true
         form.value.permissions = data.permissions ?? []
         savedPermissions.value = [...form.value.permissions]
-        form.value.master = !!data.master
     } catch (err) {
         error.value = err.message
     } finally {
@@ -131,10 +126,6 @@ const submitForm = async () => {
         name: form.value.name,
         email: form.value.email,
         active: form.value.active,
-    }
-
-    if (auth.user?.master) {
-        payload.master = form.value.master
     }
 
     if (form.value.password) {
@@ -156,7 +147,7 @@ const submitForm = async () => {
             throw new Error(data.message || 'Erro ao processar requisição.')
         }
 
-        if (canManagePermissions.value && !form.value.master && !sameKeys(form.value.permissions, savedPermissions.value)) {
+        if (canManagePermissions.value && !sameKeys(form.value.permissions, savedPermissions.value)) {
             const permResponse = await apiFetch(`/users/${data.id}/permissions`, {
                 method: 'PUT',
                 body: JSON.stringify({ permissions: form.value.permissions }),

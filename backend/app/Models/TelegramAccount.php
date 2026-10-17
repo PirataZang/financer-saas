@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Database\Eloquent\Model;
 
 #[Fillable(['telegram_user_id', 'username', 'first_name', 'activated_at', 'revoked_at'])]
 class TelegramAccount extends Model
 {
+    use BelongsToCompany;
+
     protected function casts(): array
     {
         return [

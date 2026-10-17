@@ -4,11 +4,11 @@ namespace App\Models;
 
 use App\Enums\CustomerStatus;
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\BelongsToCompany;
 use Database\Factories\CustomerFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\ValidationException;
 
@@ -19,7 +19,7 @@ use Illuminate\Validation\ValidationException;
 class Customer extends Model
 {
     /** @use HasFactory<CustomerFactory> */
-    use HasFactory, Auditable, SoftDeletes;
+    use HasFactory, Auditable, BelongsToCompany, SoftDeletes;
 
     protected $appends = ['status_label'];
 

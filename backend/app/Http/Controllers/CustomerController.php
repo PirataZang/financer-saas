@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Attributes\Permission;
 use App\Enums\CustomerStatus;
+use App\Models\Company;
 use App\Service\CustomerService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -64,12 +65,17 @@ class CustomerController extends Controller
      * Public self-registration (no authentication, `throttle:public`). Status and active
      * are not accepted from the outside, and only a confirmation is returned.
      */
-    public function register(Request $request): JsonResponse
+    public function register(Request $request, string $token): JsonResponse
     {
+        // Unknown, revoked or expired token: a plain 404, same as a route that doesn't exist.
+        $company = Company::where('token', $token)->first();
+        abort_unless($company?->isActive(), 404);
+
         $rules = $this->customerService->rules();
         unset($rules['status'], $rules['active']);
+        $validated = $request->validate($rules);
 
-        $this->customerService->register($request->validate($rules));
+        Company::as($company->id, fn () => $this->customerService->register($validated));
 
         return response()->json(['message' => 'Cadastro recebido com sucesso.'], 201);
     }
