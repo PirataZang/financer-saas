@@ -2,9 +2,9 @@ import { randomUUID } from 'node:crypto'
 import type { Bot } from 'grammy'
 import { type CardStep, detachCard, expired, isLiveCard, notice, receiptCard, showCard, transactionCard, typeCard, typing } from '../card.js'
 import { backend, type TransactionType } from '../clients/backend.js'
-import { config } from '../config.js'
 import { log } from '../log.js'
 import { parseMoney, todayIn } from '../money.js'
+import { timezoneOf } from '../config.js'
 import { type BotContext, resetSession } from '../session.js'
 
 // "Lançamento" wizard on the live card: type → 1 valor → 2 descrição → 3 categoria → 4 confirmar.
@@ -12,7 +12,7 @@ import { type BotContext, resetSession } from '../session.js'
 // finance rule. Typed answers are deleted so the chat ends with just the receipt.
 
 const render = (ctx: BotContext, note?: string) =>
-  showCard(ctx, transactionCard(ctx.session.draft, ctx.session.step as CardStep, todayIn(config.timezone), ctx.session.categories), { note })
+  showCard(ctx, transactionCard(ctx.session.draft, ctx.session.step as CardStep, todayIn(timezoneOf(ctx)), ctx.session.categories), { note })
 
 export function registerTransaction(bot: Bot<BotContext>): void {
   bot.callbackQuery('launch', async (ctx) => {
@@ -102,7 +102,7 @@ export function registerTransaction(bot: Bot<BotContext>): void {
     await ctx.answerCallbackQuery()
     await typing(ctx)
 
-    const date = todayIn(config.timezone)
+    const date = todayIn(timezoneOf(ctx))
     // draft.id is the idempotency key: a retried/duplicated confirm returns the same transaction.
     const transaction = await backend.createTransaction(ctx.from.id, {
       type: draft.type,

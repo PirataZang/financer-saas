@@ -98,7 +98,8 @@ const saving = ref(false)
 const error = ref('')
 const source = ref('')
 const options = ref({ types: [], statuses: [], sources: [] })
-const form = ref({ type: 'expense', amount: '', date: toDateString(new Date()), status: 'paid', description: '', category_id: '' })
+// New entries start with the company's default status (Configurações › Financeiro).
+const form = ref({ type: 'expense', amount: '', date: toDateString(new Date()), status: auth.settings.finance.default_status || 'paid', description: '', category_id: '' })
 const repeat = ref({ mode: 'none', count: 2 })
 // Set by "Salvar e lançar outra" right before the form submits (Enter / "Salvar" leave it false).
 let another = false

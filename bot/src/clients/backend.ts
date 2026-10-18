@@ -71,7 +71,11 @@ async function request<T>(telegramUserId: number, method: 'GET' | 'POST', path: 
 }
 
 export const backend = {
-  me: (telegramUserId: number) => request<unknown>(telegramUserId, 'GET', '/bot/me'),
+  /** The linked account; timezone = the company's "today" (Configurações › Financeiro). */
+  me: (telegramUserId: number) => request<{ company: string; timezone?: string }>(telegramUserId, 'GET', '/bot/me'),
+
+  /** Unlinks this Telegram user (they can send another code afterwards). */
+  disconnect: (telegramUserId: number) => request<unknown>(telegramUserId, 'POST', '/bot/disconnect'),
 
   activate: (user: TelegramUser, code: string) =>
     request<unknown>(user.id, 'POST', '/bot/activate', { code, username: user.username, first_name: user.first_name }),

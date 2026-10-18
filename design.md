@@ -18,6 +18,11 @@ CSS vars em [`main.scss`](frontend/src/styles/main.scss) (`--color-*`). Nunca ha
 use a var. A marca é azul por padrão (`--color-primary`); vermelho é reservado só para `--color-danger`
 (erro/exclusão) — nunca use vermelho como cor de marca/ação primária.
 
+**Cor da marca por empresa** (Configurações › Aparência): `--color-primary` é trocada em tempo de execução
+(`utils/theme.js`); `--color-primary-hover/-soft/-muted/-glow` derivam dela com `color-mix` em `main.scss`. Por isso
+`$color-primary*` no Sass são `var(...)`: **nunca** passe-os a funções Sass (`rgba()`, `mix()`) — use
+`color-mix(in srgb, #{$color-primary} 28%, transparent)`. A tela só salva cores com contraste ≥ 4,5:1 para texto branco.
+
 | Token | Valor | Uso |
 |---|---|---|
 | `--color-primary` | `#2563eb` | Marca, ação primária, foco |
@@ -74,6 +79,10 @@ Reutilize antes de criar algo novo (`frontend/src/components/utils/` e `ui/`):
   `cellComponent()` do próprio `AgGrid.vue` (função crua devolvendo VNode sai em branco).
 - **Modal** (`utils/Modal.vue`) — `v-model`, slots `default`/`footer`, fecha com Esc ou clique fora. Prop
   `size` (`sm` 440px padrão / `md` 720px·80vh / `lg` 960px·85vh).
+- **Tabs** (`ui/Tabs.vue`) — abas com `tabs = [{ value, label, icon?, count? }]` e `v-model`; setas/Home/End
+  trocam. Painel: `id="tabpanel-<value>" role="tabpanel"`. Usado em Configurações e no UserForm.
+- **CompanyFields** (`company/CompanyFields.vue`) — campos de cadastro + endereço com CEP de uma empresa
+  (Restrita › Empresas e Configurações › Empresa); `markZipLoaded()` após carregar o registro.
 - **PageHeader** (`ui/PageHeader.vue`) — título + subtítulo + ícone, primeiro elemento de toda página.
 - **FormActions** (`ui/FormActions.vue`) — par Salvar/Cancelar padrão de todo formulário, sempre no fim.
 - **ActivityLogModal** (`ui/ActivityLogModal.vue`) — modal genérico de "Histórico de Alterações" (busca,
@@ -302,9 +311,17 @@ banco**: só `/api/bot/*`.
   (`telegram_accounts.revoked_at`). A `TelegramAccount` vira o *causer* do activity log.
 - **Empresa**: cada `TelegramAccount` pertence a uma empresa; o middleware escopa a requisição a ela
   (`Company::as`) e bloqueia com 403 `COMPANY_INACTIVE` se a licença estiver inativa (o bot mostra a mensagem).
-  Hoje o código único de ativação entra na Empresa Padrão; código por empresa quando outra empresa usar o bot.
-- **Ativação**: `BotActivationService` é o único lugar que valida o código (hoje `TELEGRAM_ACTIVATION_CODE`).
-  Códigos por usuário/expiração/vínculo com `User` trocam só o `codeIsValid()`; revogação já é respeitada.
+  O fuso horário da empresa (Configurações › Financeiro) chega ao bot em `/bot/me` e define o "hoje".
+- **Vínculo**: cada empresa tem seu código (`companies.telegram_code`, coluna protegida, `XXXX-XXXX-XXXX` sem
+  0/O/1/I/L) gerado em Configurações › Telegram. O link `t.me/<TELEGRAM_BOT_USERNAME>?start=<código>` chega ao bot
+  como `/start <código>` e vincula com um toque; digitar o código também vale (sem diferença de caixa/espaços/traços).
+  Novo código invalida o anterior só para novos vínculos; revogar o código fecha novos vínculos. Um Telegram
+  pertence a uma empresa por vez: para mudar, a empresa atual **remove** o vínculo (revogar só bloqueia) ou o
+  próprio usuário usa **Desconectar** no bot (só pelo menu de comandos do Telegram, `/desconectar` → confirma →
+  `POST /bot/disconnect` → o bot volta a pedir o código). Sem vínculo, qualquer mensagem recebe as boas-vindas
+  (`codePrompt`) numa mensagem nova com `force_reply` + placeholder (`CODE_INPUT`): a caixa de texto já abre pronta
+  para o código; código errado repete o pedido com o erro no topo. Conta revogada não chega a desconectar (o middleware barra), então não dá para
+  driblar a revogação. Tudo em `BotActivationService`.
 - **Limites** (`config/rate-limit.php`, chaveados por usuário do Telegram): `bot`, `bot-activation`
   (tentativas de código), `bot-transactions` (teto de lançamentos/hora).
 - **Idempotência**: o bot envia `idempotency_key` = `chat:mensagem de confirmação`; o backend grava
@@ -376,3 +393,24 @@ Todo registro pertence a uma empresa (`companies`). **Não existe acesso global*
   do seeder entram por empresa; empresa nova começa sem categorias (cadastro em Financeiro › Categorias).
 - **Segurança extra** — token de sessão salvo como hash sha256 (vazamento da tabela `users` não entrega
   sessões); `/api/status` só para master; tokens e `master` são colunas protegidas (seção 5).
+
+## 15. Configurações
+
+Página `/settings` (menu Configurações, aba na URL: `?tab=telegram`). Abas da **empresa atual**, cada uma com sua
+permissão (`settings.company | appearance | finance | telegram`), e **Preferências**, do próprio usuário (sem
+permissão). Backend: `SettingsController` + `SettingsService` (dono das chaves, padrões e regras).
+
+- **Armazenamento** — `companies.settings` e `users.preferences` (JSON). `SettingsService::COMPANY_DEFAULTS` /
+  `PREFERENCE_DEFAULTS` definem as chaves; ao ler, os padrões completam o que falta e chaves desconhecidas somem.
+  Configuração nova = chave nos defaults + regra em `sectionRules()` + campo na aba. Nada vem do id da requisição:
+  tudo vale para `Company::current()` (master trocando de empresa configura a empresa escolhida).
+- **Na sessão** — `/auth/me` traz `company.settings` e `preferences`; o front lê de `auth.settings` /
+  `auth.preferences` (nunca busca de novo por tela). Depois de salvar uma aba da empresa: `auth.refreshUser()`.
+- **Empresa** — a própria empresa edita cadastro e endereço; licença (`expires_at`, token) continua só do master.
+- **Aparência** — cor principal (prévia ao vivo no app inteiro; sair sem salvar restaura) e nome exibido (menu e aba
+  do navegador). Sem logo por enquanto.
+- **Financeiro** — status inicial do formulário de transação, período inicial da lista e do dashboard financeiro,
+  fuso horário do bot.
+- **Telegram** — código/link de vínculo (gerar, gerar novo, revogar) e contas vinculadas (revogar, reativar, remover).
+- **Preferências** — menu aberto ou só ícones (o botão do topo grava a mesma preferência), densidade das tabelas
+  (`AgGrid` usa linha de 34px na compacta) e página inicial (só telas que o usuário acessa; senão o 1º item do menu).

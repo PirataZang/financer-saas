@@ -23,7 +23,7 @@ services:
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-6f93b8c8bd1cc6b1f3fa83b7}
       - BOT_API_TOKEN=${BOT_API_TOKEN:-}
-      - TELEGRAM_ACTIVATION_CODE=${TELEGRAM_ACTIVATION_CODE:-}
+      - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME:-}
     depends_on:
       postgres:
         condition: service_healthy

@@ -144,42 +144,6 @@ onMounted(async () => {
   font-size: 0.9rem;
 }
 
-.swatches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.swatch {
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-card);
-  cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-}
-
-.swatch:hover {
-  transform: translateY(-1px);
-}
-
-.swatch.selected {
-  box-shadow: 0 0 0 2px var(--color-bg-card), 0 0 0 4px var(--color-primary);
-}
-
-.swatch--emoji {
-  font-size: 1rem;
-}
-
-.swatch--color {
-  border-color: transparent;
-}
-
 .preview {
   display: flex;
   flex-direction: column;

@@ -86,18 +86,23 @@ Container `bot` (pasta `bot/`, Node + TypeScript). No `.env` da raiz:
 ```env
 TELEGRAM_BOT_TOKEN=          # do @BotFather
 TELEGRAM_BOT_ID=             # número antes do ':' no token (checagem de sanidade)
-TELEGRAM_ACTIVATION_CODE=AVT-123
+TELEGRAM_BOT_USERNAME=       # @username do bot, sem @ (monta o link de vínculo)
 BOT_API_TOKEN=               # segredo bot↔backend: openssl rand -hex 32
 ```
 
-`docker compose up -d --build bot backend`. No Telegram, mande qualquer mensagem (ou `/start`): na primeira vez
-o bot pede o código de ativação; depois abre o menu **Novo lançamento / Consultar**. Tudo acontece num **cartão
+`docker compose up -d --build bot backend`. O bot é um só para todas as empresas: cada empresa gera o **seu
+código de vínculo** em **Configurações › Telegram** (gerar, gerar novo, revogar) e passa o link
+`t.me/<bot>?start=<código>` — abrir o link vincula o Telegram à empresa com um toque (ou mande o código ao bot).
+Na mesma aba ficam as contas vinculadas (revogar, reativar, remover). Depois do vínculo o bot abre o menu
+**Novo lançamento / Consultar**. Tudo acontece num **cartão
 único** que o bot edita a cada etapa (suas respostas digitadas são apagadas para o chat ficar limpo):
 - **Novo lançamento**: Receita/Despesa → valor → descrição → categoria → confirmar (com "← Voltar" em cada
   etapa). Fica no chat só o comprovante, e a transação aparece em **Financeiro > Transações** com origem Telegram.
 - **Consultar**: escolha o período (este mês, mês passado, este ano, todo o período) e receba o balancete —
   receitas e despesas por categoria, total arrecadado, total gasto, resultado líquido e saldo acumulado.
 - `/cancelar` descarta o lançamento em andamento.
+- **Desconectar** (`/desconectar`, no botão de menu de comandos do Telegram): desvincula o Telegram da empresa e o bot volta a pedir um
+  código — para trocar de empresa ou reconectar com um código novo.
 
 Revogar um usuário:
 `docker compose exec backend php artisan tinker --execute='App\Models\TelegramAccount::where("telegram_user_id", ID)->update(["revoked_at" => now()]);'`

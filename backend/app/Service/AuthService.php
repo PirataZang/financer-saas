@@ -63,7 +63,8 @@ class AuthService
             ...$user->toArray(),
             'master' => $user->master,
             'permissions' => $user->permissionKeys(),
-            'company' => $company->only(['id', 'name', 'trade_name', 'active']),
+            'company' => [...$company->only(['id', 'name', 'trade_name', 'active']), 'settings' => SettingsService::for($company)],
+            'preferences' => SettingsService::preferences($user),
             // Masters switch between every company (company switcher), active or not.
             'companies' => $user->master
                 ? Company::orderBy('name')->get()->map->only(['id', 'name', 'trade_name', 'active'])

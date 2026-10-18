@@ -17,6 +17,7 @@ import TransactionList from '@/pages/finance/TransactionList.vue'
 import TransactionForm from '@/pages/finance/TransactionForm.vue'
 import CompanyList from '@/pages/company/CompanyList.vue'
 import CompanyForm from '@/pages/company/CompanyForm.vue'
+import Settings from '@/pages/settings/Settings.vue'
 
 
 // Single source for navigation: meta.permission protects the route (guard), and
@@ -239,6 +240,23 @@ const routes = [
         meta: { permission: 'users.update' },
       },
       {
+        // No permission: Preferências is everyone's; each company tab checks its own (settings.*).
+        path: 'settings',
+        name: 'Settings',
+        component: Settings,
+        meta: {
+          menu: {
+            label: 'Configurações',
+            icon: 'fa-solid fa-gear',
+            description: 'Empresa, aparência, financeiro, bot do Telegram e preferências',
+            keywords: ['configuração', 'ajustes', 'telegram', 'bot', 'vínculo', 'código', 'aparência', 'cor', 'tema',
+              'marca', 'fuso', 'horário', 'preferências', 'densidade', 'página inicial', 'empresa', 'cnpj'],
+            module: 'Configurações',
+            order: 800,
+          },
+        },
+      },
+      {
         path: 'restricted/company',
         name: 'CompanyList',
         component: CompanyList,
@@ -297,9 +315,11 @@ export function navigationItems(user) {
   return menuItems(router.getRoutes(), user)
 }
 
+// Configurações › Preferências "página inicial", while the user can still open it; else the first menu entry.
 function firstAccessibleRoute() {
-  const [first] = navigationItems(useAuthStore().user).filter((item) => item.sidebar !== false)
-  return first?.route ?? '/forbidden'
+  const items = navigationItems(useAuthStore().user).filter((item) => item.sidebar !== false)
+  const start = useAuthStore().preferences.start_page
+  return items.find((item) => item.route === start)?.route ?? items[0]?.route ?? '/forbidden'
 }
 
 let userRefreshed = false

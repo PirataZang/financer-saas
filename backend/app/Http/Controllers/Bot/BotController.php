@@ -10,6 +10,7 @@ use App\Models\TelegramAccount;
 use App\Service\BotActivationService;
 use App\Service\CategoryService;
 use App\Service\FinanceDashboardService;
+use App\Service\SettingsService;
 use App\Service\TransactionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,9 +49,29 @@ class BotController extends Controller
         return response()->json(['message' => 'Bot ativado.', 'account' => $account]);
     }
 
+    /** The account plus its company: name (shown before disconnecting) and timezone (the bot's "today"). */
     public function me(Request $request): JsonResponse
     {
-        return response()->json($this->account($request));
+        $account = $this->account($request);
+
+        return response()->json([
+            ...$account->toArray(),
+            'company' => $account->company->trade_name ?: $account->company->name,
+            'timezone' => SettingsService::for($account->company)['finance']['timezone'],
+        ]);
+    }
+
+    /**
+     * The Telegram user unlinks themselves (same as "Remover" in Configurações › Telegram), so they can
+     * send another code — e.g. another company's. Revoked accounts never get here (BotMiddleware).
+     */
+    public function disconnect(Request $request): JsonResponse
+    {
+        $account = $this->account($request);
+        $this->activationService->remove($account->id);
+        Log::info('bot.disconnected', ['telegram_user_id' => $account->telegram_user_id]);
+
+        return response()->json(['message' => 'Bot desconectado.']);
     }
 
     public function categories(Request $request): JsonResponse

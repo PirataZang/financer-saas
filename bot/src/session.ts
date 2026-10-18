@@ -23,6 +23,8 @@ export interface SessionData {
   cardId?: number
   /** What the live card shows, so a hint or error can be added without losing it. */
   view?: { text: string; keyboard?: InlineKeyboard }
+  /** The company's timezone, from /bot/me on every greeting (fallback BOT_TIMEZONE after a restart). */
+  timezone?: string
 }
 
 export type BotContext = Context & SessionFlavor<SessionData>
@@ -31,7 +33,7 @@ export const initialSession = (): SessionData => ({ step: 'idle', draft: {}, cat
 
 /** Clears the flow but keeps the live card, so the next screen replaces it in place. */
 export function resetSession(ctx: BotContext): void {
-  ctx.session = { ...initialSession(), cardId: ctx.session.cardId, view: ctx.session.view }
+  ctx.session = { ...initialSession(), cardId: ctx.session.cardId, view: ctx.session.view, timezone: ctx.session.timezone }
 }
 
 export function escapeHtml(text: string): string {

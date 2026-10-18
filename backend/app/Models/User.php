@@ -47,6 +47,7 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
             'password' => 'hashed',
             'active' => 'boolean',
             'master' => 'boolean',
+            'preferences' => 'array',
         ];
     }
 

@@ -2,6 +2,7 @@ import { Bot, session } from 'grammy'
 import { config } from './config.js'
 import { registerActivation, replyError } from './flows/activation.js'
 import { registerConsult } from './flows/consult.js'
+import { registerDisconnect } from './flows/disconnect.js'
 import { registerMenu, registerMenuFallback } from './flows/menu.js'
 import { registerTransaction } from './flows/transaction.js'
 import { log } from './log.js'
@@ -26,6 +27,8 @@ bot.use(async (ctx, next) => {
 // handlers, then the fallback that greets on any other message. A new flow = a new file in
 // flows/ with its own register function + a button in the main menu (flows/menu.ts).
 registerMenu(bot)
+// Before activation: "/desconectar" typed while waiting for a code must not be read as the code.
+registerDisconnect(bot)
 registerActivation(bot)
 registerTransaction(bot)
 registerConsult(bot)
@@ -51,6 +54,7 @@ await Promise.all([
   bot.api.setMyCommands([
     { command: 'start', description: 'Abrir o menu' },
     { command: 'cancelar', description: 'Descartar o lançamento atual' },
+    { command: 'desconectar', description: 'Desvincular da empresa para usar outro código' },
   ]),
   bot.api.setMyShortDescription('Registre receitas e despesas e consulte seu balancete, direto pelo Telegram.'),
   bot.api.setMyDescription(

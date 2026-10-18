@@ -2,19 +2,25 @@ import type { Bot } from 'grammy'
 import { detachCard, menuCard, notice, showCard } from '../card.js'
 import { backend } from '../clients/backend.js'
 import { type BotContext, resetSession } from '../session.js'
+import { activateWith } from './activation.js'
 
 // Entry point of every conversation: any message (or /start) opens the menu card.
 
 /** Checks activation with the backend (403 → replyError asks for the code), then greets below. */
 async function greet(ctx: BotContext): Promise<void> {
-  await backend.me(ctx.from!.id)
+  ctx.session.timezone = (await backend.me(ctx.from!.id)).timezone
   await detachCard(ctx)
   resetSession(ctx)
   await showCard(ctx, menuCard(ctx.from?.first_name))
 }
 
 export function registerMenu(bot: Bot<BotContext>): void {
-  bot.command('start', greet)
+  // t.me/<bot>?start=<code> (link from Configurações › Telegram) arrives as "/start <code>": links in one tap.
+  bot.command('start', async (ctx) => {
+    if (!ctx.match) return greet(ctx)
+    await ctx.deleteMessage().catch(() => {})
+    await activateWith(ctx, ctx.match)
+  })
 
   const cancel = async (ctx: BotContext) => {
     const hadFlow = ctx.session.step !== 'idle'

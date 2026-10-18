@@ -38,6 +38,10 @@
         <StatusBadge class="card__role" :label="role.label" :color="role.color" :icon="role.icon" small />
 
         <div class="card__actions">
+          <router-link to="/settings?tab=preferences" class="action" @click="close()">
+            <i class="fa-solid fa-sliders" aria-hidden="true" />
+            Preferências
+          </router-link>
           <button type="button" class="action action--danger" :disabled="loggingOut" @click="logout">
             <i class="fa-solid fa-right-from-bracket" aria-hidden="true" />
             {{ loggingOut ? 'Saindo...' : 'Sair da conta' }}
@@ -121,7 +125,7 @@ onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
   width: 64px;
   height: 64px;
   font-size: 1.35rem;
-  box-shadow: 0 6px 16px rgba($color-primary, 0.28);
+  box-shadow: 0 6px 16px color-mix(in srgb, #{$color-primary} 28%, transparent);
 }
 
 // --- Trigger: name + role, avatar, chevron ---
@@ -280,8 +284,13 @@ onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
   font-size: $font-md;
   font-weight: 500;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
   transition: background $transition-fast;
+
+  &:hover:not(:disabled) {
+    background: $color-bg-muted;
+  }
 
   &:focus-visible {
     outline: 2px solid $color-primary;

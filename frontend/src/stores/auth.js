@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { API_URL } from '@/services/api'
+import { API_URL, apiFetch } from '@/services/api'
 import { can } from '@/permissions'
 
 const STORAGE_KEYS = {
@@ -51,6 +51,15 @@ export const useAuthStore = defineStore('auth', {
         ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}),
         ...(state.companyId ? { 'X-Company-Id': String(state.companyId) } : {}),
       }
+    },
+
+    // Current company's settings (Configurações) and the user's preferences, defaults filled by the API.
+    settings(state) {
+      return state.user?.company?.settings ?? { appearance: {}, finance: {} }
+    },
+
+    preferences(state) {
+      return state.user?.preferences ?? {}
     },
 
     userInitials(state) {
@@ -178,6 +187,14 @@ export const useAuthStore = defineStore('auth', {
       if (this.companyId) localStorage.setItem(STORAGE_KEYS.companyId, this.companyId)
       else localStorage.removeItem(STORAGE_KEYS.companyId)
       return true
+    },
+
+    // Optimistic: the screen reacts right away; the API stores it for every device of this user.
+    async savePreferences(patch) {
+      this.user = { ...this.user, preferences: { ...this.preferences, ...patch } }
+      localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(this.user))
+      const response = await apiFetch('/settings/preferences', { method: 'PUT', body: JSON.stringify(patch) })
+      if (!response.ok) throw new Error('Não foi possível salvar a preferência.')
     },
 
     async validateSession() {
