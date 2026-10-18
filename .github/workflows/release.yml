@@ -1,0 +1,30 @@
+name: Release
+
+# Criado pelo DevScope: roda quando uma tag vX.Y.Z chega ao GitHub e publica a
+# Release com a mensagem da tag como notas (o DevScope põe nela a seção do
+# CHANGELOG.md da versão).
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # O checkout pode trazer a tag sem a mensagem; busca de novo a anotada.
+      - run: git fetch --force --tags
+
+      - name: Notas da tag
+        run: git tag -l --format='%(contents)' "$GITHUB_REF_NAME" > notes.md
+
+      - name: Publicar a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
