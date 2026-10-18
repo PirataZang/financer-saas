@@ -9,15 +9,14 @@
             </div>
 
             <form v-else @submit.prevent="submitForm">
-                <div v-if="canManagePermissions" class="tabs" role="tablist">
-                    <button type="button" role="tab" class="tab" :class="{ active: activeTab === 'general' }" :aria-selected="activeTab === 'general'" @click="activeTab = 'general'">
-                        <i class="fa-solid fa-id-card" aria-hidden="true" /> Dados
-                    </button>
-                    <button type="button" role="tab" class="tab" :class="{ active: activeTab === 'permissions' }" :aria-selected="activeTab === 'permissions'" @click="activeTab = 'permissions'">
-                        <i class="fa-solid fa-shield-halved" aria-hidden="true" /> Permissões
-                        <span class="tab__count">{{ form.permissions.length }}</span>
-                    </button>
-                </div>
+                <Tabs
+                    v-if="canManagePermissions"
+                    v-model="activeTab"
+                    :tabs="[
+                        { value: 'general', label: 'Dados', icon: 'fa-solid fa-id-card' },
+                        { value: 'permissions', label: 'Permissões', icon: 'fa-solid fa-shield-halved', count: form.permissions.length },
+                    ]"
+                />
 
                 <div v-show="activeTab === 'general'" class="form-grid">
                     <div class="col-6">
@@ -58,6 +57,7 @@ import Input from '@/components/utils/Input.vue'
 import Switch from '@/components/utils/Switch.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import FormActions from '@/components/ui/FormActions.vue'
+import Tabs from '@/components/ui/Tabs.vue'
 import UserPermissions from './UserPermissions.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -176,47 +176,6 @@ onMounted(() => Promise.all([fetchUser(), fetchCatalog()]))
 </script>
 
 <style scoped>
-.tabs {
-    display: flex;
-    gap: 4px;
-    margin-bottom: 20px;
-    border-bottom: 1px solid var(--color-border);
-}
-
-.tab {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    border: 0;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-    background: transparent;
-    color: var(--color-text-muted);
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.tab:hover {
-    color: var(--color-text);
-}
-
-.tab.active {
-    color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
-}
-
-.tab__count {
-    min-width: 20px;
-    padding: 1px 6px;
-    border-radius: 999px;
-    background: var(--color-primary-soft);
-    color: var(--color-primary);
-    font-size: 0.7rem;
-    text-align: center;
-}
-
 .loading-state {
     display: flex;
     align-items: center;

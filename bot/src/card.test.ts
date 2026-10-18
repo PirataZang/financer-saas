@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { menuCard, receiptCard, transactionCard } from './card.js'
+import { CODE_INPUT, codePrompt, disconnectCard, menuCard, receiptCard, transactionCard } from './card.js'
 import type { Draft } from './session.js'
 
 const buttons = (card: { keyboard?: { inline_keyboard: { text: string; callback_data?: string }[][] } }) =>
@@ -50,4 +50,21 @@ test('receipt and menu speak to the user by name', () => {
   assert.deepEqual(buttons(receipt), [['launch', 'consult']])
   assert.equal(menuCard('Igor').text, 'Olá, Igor! O que você gostaria de fazer hoje?')
   assert.equal(menuCard().text, 'Olá! O que você gostaria de fazer hoje?')
+  // Desconectar lives only in Telegram's command menu (/desconectar), never on the cards.
+  assert.deepEqual(buttons(menuCard()), [['launch', 'consult']])
+})
+
+test('disconnect asks first, names the company (escaped) and ends waiting for a code', () => {
+  const ask = disconnectCard('A & B <Ltda>')
+  assert.match(ask.text, /A &amp; B &lt;Ltda&gt;/)
+  assert.deepEqual(buttons(ask), [['disconnect:yes'], ['menu']])
+})
+
+test('code prompt: welcome, after disconnecting or after a wrong code, always with the reply box', () => {
+  assert.match(codePrompt({ firstName: 'Igor' }), /Olá, Igor! Boas-vindas/)
+  assert.match(codePrompt({ disconnectedFrom: 'A & B' }), /Bot desconectado[\s\S]*A &amp; B/)
+  assert.match(codePrompt({ error: 'Código de ativação inválido.' }), /⚠️ <b>Código de ativação inválido\.<\/b>/)
+  for (const text of [codePrompt(), codePrompt({ error: 'x' })]) assert.match(text, /digite o código abaixo/)
+  assert.equal(CODE_INPUT.force_reply, true)
+  assert.ok(CODE_INPUT.input_field_placeholder.length <= 64)
 })

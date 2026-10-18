@@ -146,7 +146,8 @@ import { formatMoney } from '@/utils/money'
 
 // Presets as chips; "Tudo" drops the dates. Typing a date by hand = custom (no chip lit).
 const QUICK_PERIODS = [...PERIODS.filter((p) => p.value !== 'custom'), { value: 'all', label: 'Tudo' }]
-const DEFAULT_PERIOD = 'month'
+// Configurações › Financeiro "período inicial".
+const DEFAULT_PERIOD = useAuthStore().settings.finance.default_period || 'month'
 const DEFAULT_FILTERS = () => ({ search: '', type: '', category_id: '', status: '', source: '', min_amount: '', max_amount: '' })
 
 const router = useRouter()

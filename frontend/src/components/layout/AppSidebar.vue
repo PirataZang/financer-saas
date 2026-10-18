@@ -4,7 +4,7 @@
       <div class="brand">
         <div class="brand__mark" aria-hidden="true"><i class="fa-solid fa-chart-line" /></div>
         <div v-show="isExpanded" class="brand__text">
-          <strong>Financial Bot</strong>
+          <strong :title="brandName">{{ brandName }}</strong>
           <span>Painel Admin</span>
         </div>
       </div>
@@ -32,8 +32,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { menuItems as allowedMenuItems, menuTree } from '@/permissions'
 import SidebarMenuItem from './SidebarMenuItem.vue'
+import { APP_NAME } from '@/utils/theme'
 
-// Open/closed is owned by AppLayout (topbar toggle, remembered per browser). Expanded = fixed
+// Open/closed is owned by AppLayout (topbar toggle, saved as a user preference). Expanded = fixed
 // next to the content; compact = icon rail, where groups open as flyouts (SidebarMenuItem).
 const props = defineProps({
   visible: { type: Boolean, default: true },
@@ -46,6 +47,7 @@ const auth = useAuthStore()
 const openKeys = ref(new Set())
 
 const isExpanded = computed(() => props.visible && props.expanded)
+const brandName = computed(() => auth.settings.appearance.brand_name || APP_NAME)
 
 // Itens vêm do meta.menu das rotas (router/index.js), já filtrados pela permissão
 // do usuário — para um novo menu, declare meta.permission + meta.menu na rota;
@@ -201,6 +203,9 @@ watch(
   line-height: 1.15;
 
   strong {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     font-size: $font-lg;
     font-weight: 700;
     color: $color-text;

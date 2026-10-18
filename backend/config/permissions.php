@@ -47,4 +47,13 @@ return [
             'transaction.delete' => 'Excluir transações',
         ],
     ],
+    'settings' => [
+        'name' => 'Configurações',
+        'actions' => [
+            'company' => 'Editar os dados da empresa',
+            'appearance' => 'Personalizar a aparência do sistema',
+            'finance' => 'Alterar os padrões do financeiro',
+            'telegram' => 'Gerenciar o bot do Telegram (código de vínculo e contas)',
+        ],
+    ],
 ];

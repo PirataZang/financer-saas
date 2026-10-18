@@ -1,0 +1,357 @@
+{
+  "branch": "SaaS",
+  "created_at": "2026-10-18T23:21:47.214Z",
+  "author": {
+    "name": "Igor Fronza",
+    "email": "igorfronza20@gmail.com"
+  },
+  "parent": "ebde9b683dac495ec81f578ad69b00c85c5d3b9c",
+  "notes": null,
+  "stats": {
+    "files": 54,
+    "additions": 2046,
+    "deletions": 254
+  },
+  "files": [
+    {
+      "status": "M",
+      "path": ".env.example",
+      "additions": 4,
+      "deletions": 3
+    },
+    {
+      "status": "M",
+      "path": "README.md",
+      "additions": 8,
+      "deletions": 3
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Http/Controllers/Bot/BotController.php",
+      "additions": 22,
+      "deletions": 1
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/SettingsController.php",
+      "additions": 110,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Models/Company.php",
+      "additions": 2,
+      "deletions": 2
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Models/User.php",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/AuthService.php",
+      "additions": 2,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/BotActivationService.php",
+      "additions": 80,
+      "deletions": 16
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/SettingsService.php",
+      "additions": 128,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/config/permissions.php",
+      "additions": 9,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/config/services.php",
+      "additions": 2,
+      "deletions": 2
+    },
+    {
+      "status": "A",
+      "path": "backend/database/migrations/0001_01_01_000008_add_settings_columns.php",
+      "additions": 34,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/routes/api.php",
+      "additions": 17,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/tests/Feature/AuthorizationTest.php",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/tests/Feature/BotApiTest.php",
+      "additions": 40,
+      "deletions": 7
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Feature/SettingsTest.php",
+      "additions": 171,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "bot/src/card.test.ts",
+      "additions": 18,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "bot/src/card.ts",
+      "additions": 36,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "bot/src/clients/backend.ts",
+      "additions": 5,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "bot/src/config.ts",
+      "additions": 3,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "bot/src/flows/activation.ts",
+      "additions": 27,
+      "deletions": 14
+    },
+    {
+      "status": "M",
+      "path": "bot/src/flows/consult.ts",
+      "additions": 2,
+      "deletions": 2
+    },
+    {
+      "status": "A",
+      "path": "bot/src/flows/disconnect.ts",
+      "additions": 41,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "bot/src/flows/menu.ts",
+      "additions": 8,
+      "deletions": 2
+    },
+    {
+      "status": "M",
+      "path": "bot/src/flows/transaction.ts",
+      "additions": 3,
+      "deletions": 3
+    },
+    {
+      "status": "M",
+      "path": "bot/src/index.ts",
+      "additions": 4,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "bot/src/session.ts",
+      "additions": 3,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "design.md",
+      "additions": 41,
+      "deletions": 3
+    },
+    {
+      "status": "M",
+      "path": "docker-compose.yml",
+      "additions": 1,
+      "deletions": 1
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/company/CompanyFields.vue",
+      "additions": 54,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/layout/AppSidebar.vue",
+      "additions": 7,
+      "deletions": 2
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/layout/UserMenu.vue",
+      "additions": 10,
+      "deletions": 1
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/ui/Tabs.vue",
+      "additions": 99,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/utils/AgGrid.vue",
+      "additions": 5,
+      "deletions": 2
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/layouts/AppLayout.vue",
+      "additions": 19,
+      "deletions": 19
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/company/CompanyForm.vue",
+      "additions": 6,
+      "deletions": 61
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/finance/CategoryForm.vue",
+      "additions": 0,
+      "deletions": 36
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/finance/FinanceDashboard.vue",
+      "additions": 4,
+      "deletions": 2
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/finance/TransactionForm.vue",
+      "additions": 2,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/finance/TransactionList.vue",
+      "additions": 2,
+      "deletions": 1
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/settings/AppearanceTab.vue",
+      "additions": 179,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/settings/CompanyTab.vue",
+      "additions": 85,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/settings/FinanceTab.vue",
+      "additions": 99,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/settings/PreferencesTab.vue",
+      "additions": 84,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/settings/Settings.vue",
+      "additions": 58,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/settings/TelegramTab.vue",
+      "additions": 335,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/user/UserForm.vue",
+      "additions": 9,
+      "deletions": 50
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/router/index.js",
+      "additions": 22,
+      "deletions": 2
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/stores/auth.js",
+      "additions": 18,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/styles/_colors.scss",
+      "additions": 11,
+      "deletions": 8
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/styles/form.scss",
+      "additions": 74,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/styles/main.scss",
+      "additions": 5,
+      "deletions": 5
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/utils/theme.js",
+      "additions": 25,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/utils/theme.test.js",
+      "additions": 10,
+      "deletions": 0
+    }
+  ],
+  "branch_history": {
+    "base": "main",
+    "merge_base": "e7daa889f661512217ebdc89e462ef537e464bc3",
+    "previous_commits": [
+      {
+        "hash": "ebde9b683dac495ec81f578ad69b00c85c5d3b9c",
+        "subject": "ci: workflow de release",
+        "committed_at": "2026-10-18T19:43:33-03:00"
+      },
+      {
+        "hash": "1cc484232803e0d455a874ff1af533a5ab12975a",
+        "subject": "Add multi-company (SaaS) tenancy with a master-only Companies area",
+        "committed_at": "2026-10-17T00:14:15-03:00"
+      }
+    ]
+  }
+}

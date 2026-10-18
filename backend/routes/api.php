@@ -8,6 +8,7 @@ use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ZipCodeController;
@@ -31,6 +32,7 @@ Route::prefix('bot')->group(function () {
 
     Route::middleware(['bot', 'throttle:bot'])->group(function () {
         Route::get('/me', [BotController::class, 'me']);
+        Route::post('/disconnect', [BotController::class, 'disconnect']);
         Route::get('/finance/categories', [BotController::class, 'categories']);
         Route::get('/finance/summary', [BotController::class, 'summary']);
         Route::post('/finance/transactions', [BotController::class, 'createTransaction'])->middleware('throttle:bot-transactions');
@@ -86,6 +88,21 @@ Route::middleware(['auth', 'company', 'permission'])->group(function () {
             Route::put('/{id}', [TransactionController::class, 'update']);
             Route::delete('/{id}', [TransactionController::class, 'delete']);
         });
+    });
+
+    // Configurações: current company's tabs (one permission each) + the user's own preferences.
+    Route::prefix('settings')->group(function () {
+        Route::get('/company', [SettingsController::class, 'company']);
+        Route::put('/company', [SettingsController::class, 'updateCompany']);
+        Route::put('/appearance', [SettingsController::class, 'updateAppearance']);
+        Route::get('/finance', [SettingsController::class, 'finance']);
+        Route::put('/finance', [SettingsController::class, 'updateFinance']);
+        Route::get('/telegram', [SettingsController::class, 'telegram']);
+        Route::post('/telegram/code', [SettingsController::class, 'regenerateTelegramCode']);
+        Route::delete('/telegram/code', [SettingsController::class, 'revokeTelegramCode']);
+        Route::put('/telegram/accounts/{id}', [SettingsController::class, 'updateTelegramAccount']);
+        Route::delete('/telegram/accounts/{id}', [SettingsController::class, 'removeTelegramAccount']);
+        Route::put('/preferences', [SettingsController::class, 'updatePreferences']);
     });
 
     Route::get('/zip-codes/{zipCode}', [ZipCodeController::class, 'show']);

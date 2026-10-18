@@ -15,3 +15,6 @@ export const config = {
   // "Today" for new entries is the user's day, not the server's UTC day.
   timezone: process.env.BOT_TIMEZONE?.trim() || 'America/Sao_Paulo',
 }
+
+/** "Today" for this chat: the company's timezone (session, from /bot/me), else BOT_TIMEZONE. */
+export const timezoneOf = (ctx: { session: { timezone?: string } }): string => ctx.session.timezone ?? config.timezone

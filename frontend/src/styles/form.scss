@@ -265,3 +265,77 @@
     transform: translateY(0);
   }
 }
+
+// Color/emoji suggestions under an input (CategoryForm, Configurações › Aparência).
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.swatch {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.swatch:hover {
+  transform: translateY(-1px);
+}
+
+.swatch.selected {
+  box-shadow: 0 0 0 2px var(--color-bg-card), 0 0 0 4px var(--color-primary);
+}
+
+.swatch--emoji {
+  font-size: 1rem;
+}
+
+.swatch--color {
+  border-color: transparent;
+}
+
+// Section title inside a form card + hint text under a field (company forms, Configurações).
+.form-section {
+  margin: 0 0 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.form-grid + .form-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.field-hint {
+  margin: 6px 0 0;
+  max-width: 72ch;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+
+  &.is-error {
+    color: var(--color-danger);
+  }
+}
+
+// Spinner + text while a form loads its record.
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 24px;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}

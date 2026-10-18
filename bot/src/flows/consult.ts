@@ -2,8 +2,8 @@ import { type Bot, InlineKeyboard } from 'grammy'
 import { PERIODS, type PeriodKey, formatBalance, periodRange } from '../balance.js'
 import { detachCard, expired, isLiveCard, showCard, typing } from '../card.js'
 import { backend } from '../clients/backend.js'
-import { config } from '../config.js'
 import { todayIn } from '../money.js'
+import { timezoneOf } from '../config.js'
 import { type BotContext, resetSession } from '../session.js'
 
 // "Consultar" on the live card: pick a period → balancete (same aggregates as the web dashboard).
@@ -36,7 +36,7 @@ export function registerConsult(bot: Bot<BotContext>): void {
     await typing(ctx)
 
     const key = ctx.match[1] as PeriodKey
-    const { from, to } = periodRange(key, todayIn(config.timezone))
+    const { from, to } = periodRange(key, todayIn(timezoneOf(ctx)))
     const summary = await backend.summary(ctx.from.id, from, to)
     const label = PERIODS.find((period) => period.key === key)!.label
 

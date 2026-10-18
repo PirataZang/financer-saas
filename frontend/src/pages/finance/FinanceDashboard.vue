@@ -74,6 +74,7 @@ import CategorySelect from '@/components/finance/CategorySelect.vue'
 import { apiFetch } from '@/services/api'
 import { swal } from '@/plugins/swal'
 import { PERIODS, periodRange } from '@/utils/period'
+import { useAuthStore } from '@/stores/auth'
 import { formatMoney } from '@/utils/money'
 import { charts } from './dashboardCharts'
 
@@ -86,8 +87,9 @@ const STATUS_OPTIONS = [
 const STATUS_LABEL = { paid: 'efetivada', pending: 'pendente', all: '' }
 const DEFAULT_FILTERS = () => ({ category_ids: [], source: '', status: 'paid' })
 
-const period = ref('month')
-const range = ref(periodRange('month'))
+// Configurações › Financeiro "período inicial".
+const period = ref(useAuthStore().settings.finance.default_period || 'month')
+const range = ref(periodRange(period.value))
 const filters = ref(DEFAULT_FILTERS())
 const sourceOptions = ref([])
 const summary = ref(null)

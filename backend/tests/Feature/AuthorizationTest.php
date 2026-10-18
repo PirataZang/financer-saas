@@ -203,10 +203,12 @@ class AuthorizationTest extends TestCase
             'App\Http\Controllers\AuthController@logout',
             'App\Http\Controllers\ActivityLogController@index', // checks per subject type
             'App\Http\Controllers\ZipCodeController@show', // public address data, auth only
+            'App\Http\Controllers\SettingsController@updatePreferences', // the user's own preferences
             'App\Http\Controllers\CustomerController@register', // public route, throttle:public
             // Bot integration: BotMiddleware (bot token + activated Telegram user), not user permissions.
             'App\Http\Controllers\Bot\BotController@activate',
             'App\Http\Controllers\Bot\BotController@me',
+            'App\Http\Controllers\Bot\BotController@disconnect',
             'App\Http\Controllers\Bot\BotController@categories',
             'App\Http\Controllers\Bot\BotController@summary',
             'App\Http\Controllers\Bot\BotController@createTransaction',

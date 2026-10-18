@@ -46,8 +46,8 @@ return [
     'telegram' => [
         // Shared secret the bot container sends as Bearer token on /api/bot/*.
         'bot_api_token' => env('BOT_API_TOKEN'),
-        // Temporary single activation code; see BotActivationService.
-        'activation_code' => env('TELEGRAM_ACTIVATION_CODE'),
+        // Bot @username (without @): builds the t.me/<bot>?start=<code> link in Configurações › Telegram.
+        'bot_username' => env('TELEGRAM_BOT_USERNAME'),
     ],
 
 ];

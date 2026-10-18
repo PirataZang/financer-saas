@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\TelegramAccount;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Service\BotActivationService;
 use App\Service\PermissionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -17,10 +18,14 @@ class BotApiTest extends TestCase
 
     private const TOKEN = 'test-bot-token';
 
+    /** Link code of the default company (Configurações › Telegram). */
+    private string $code;
+
     protected function setUp(): void
     {
         parent::setUp();
-        config(['services.telegram.bot_api_token' => self::TOKEN, 'services.telegram.activation_code' => 'AVT-123']);
+        config(['services.telegram.bot_api_token' => self::TOKEN]);
+        $this->code = app(BotActivationService::class)->regenerateCode(Company::find(Company::DEFAULT_ID));
     }
 
     private function bot(int $telegramUserId = 42, string $token = self::TOKEN): array
@@ -30,7 +35,7 @@ class BotApiTest extends TestCase
 
     private function activate(int $telegramUserId = 42): void
     {
-        $this->postJson('/api/bot/activate', ['code' => 'AVT-123', 'username' => 'igor'], $this->bot($telegramUserId))->assertOk();
+        $this->postJson('/api/bot/activate', ['code' => $this->code, 'username' => 'igor'], $this->bot($telegramUserId))->assertOk();
     }
 
     private function payload(int $categoryId, array $overrides = []): array
@@ -59,9 +64,12 @@ class BotApiTest extends TestCase
         $this->getJson('/api/bot/me', ['Authorization' => 'Bearer '.self::TOKEN, 'X-Telegram-User-Id' => 'abc'])->assertUnprocessable();
 
         $this->postJson('/api/bot/activate', ['code' => 'WRONG'], $this->bot())->assertUnprocessable()->assertJsonValidationErrors('code');
-        $this->postJson('/api/bot/activate', ['code' => ' AVT-123 ', 'username' => 'igor'], $this->bot())->assertOk();
+        // Typed codes are forgiving: case, spaces and missing dashes.
+        $typed = ' '.strtolower(str_replace('-', ' ', $this->code)).' ';
+        $this->postJson('/api/bot/activate', ['code' => $typed, 'username' => 'igor'], $this->bot())->assertOk();
 
-        $this->getJson('/api/bot/me', $this->bot())->assertOk()->assertJson(['telegram_user_id' => 42, 'username' => 'igor']);
+        $this->getJson('/api/bot/me', $this->bot())->assertOk()
+            ->assertJson(['telegram_user_id' => 42, 'username' => 'igor', 'timezone' => 'America/Sao_Paulo']);
         // Activation is per Telegram user.
         $this->getJson('/api/bot/me', $this->bot(7))->assertForbidden();
     }
@@ -83,13 +91,38 @@ class BotApiTest extends TestCase
         $this->getJson('/api/bot/me', $this->bot())->assertForbidden()->assertJson(['code' => 'COMPANY_INACTIVE']);
     }
 
+    public function test_user_disconnects_and_can_link_with_another_code(): void
+    {
+        $this->activate();
+        $this->getJson('/api/bot/me', $this->bot())->assertOk()->assertJson(['company' => 'Empresa Padrão']);
+
+        $this->postJson('/api/bot/disconnect', [], $this->bot())->assertOk();
+        $this->getJson('/api/bot/me', $this->bot())->assertForbidden()->assertJson(['code' => 'BOT_NOT_ACTIVATED']);
+
+        // Free to join another company now.
+        $other = Company::create(['name' => 'Outra', 'trade_name' => 'Outra Ltda']);
+        $other->regenerateToken();
+        $code = app(BotActivationService::class)->regenerateCode($other);
+        $this->postJson('/api/bot/activate', ['code' => $code], $this->bot())->assertOk();
+        $this->getJson('/api/bot/me', $this->bot())->assertOk()->assertJson(['company' => 'Outra Ltda']);
+    }
+
+    public function test_revoked_account_cannot_disconnect_to_dodge_the_revocation(): void
+    {
+        $this->activate();
+        TelegramAccount::where('telegram_user_id', 42)->update(['revoked_at' => now()]);
+
+        $this->postJson('/api/bot/disconnect', [], $this->bot())->assertForbidden();
+        $this->postJson('/api/bot/activate', ['code' => $this->code], $this->bot())->assertUnprocessable();
+    }
+
     public function test_revoked_account_is_blocked_even_with_the_code(): void
     {
         $this->activate();
         TelegramAccount::where('telegram_user_id', 42)->update(['revoked_at' => now()]);
 
         $this->getJson('/api/bot/me', $this->bot())->assertForbidden();
-        $this->postJson('/api/bot/activate', ['code' => 'AVT-123'], $this->bot())->assertUnprocessable();
+        $this->postJson('/api/bot/activate', ['code' => $this->code], $this->bot())->assertUnprocessable();
     }
 
     public function test_activation_attempts_are_rate_limited_per_telegram_user(): void
@@ -97,8 +130,8 @@ class BotApiTest extends TestCase
         foreach (range(1, 5) as $_) {
             $this->postJson('/api/bot/activate', ['code' => 'nope'], $this->bot())->assertUnprocessable();
         }
-        $this->postJson('/api/bot/activate', ['code' => 'AVT-123'], $this->bot())->assertTooManyRequests();
-        $this->postJson('/api/bot/activate', ['code' => 'AVT-123'], $this->bot(7))->assertOk();
+        $this->postJson('/api/bot/activate', ['code' => $this->code], $this->bot())->assertTooManyRequests();
+        $this->postJson('/api/bot/activate', ['code' => $this->code], $this->bot(7))->assertOk();
     }
 
     public function test_categories_come_from_the_backend_filtered_by_type(): void

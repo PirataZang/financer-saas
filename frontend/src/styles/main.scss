@@ -1,10 +1,11 @@
 @use 'colors' as *;
 
 :root {
-  --color-primary: #{$color-primary};
-  --color-primary-hover: #{$color-primary-hover};
-  --color-primary-soft: #{$color-primary-soft};
-  --color-primary-muted: #{$color-primary-muted};
+  --color-primary: #{$brand-default};
+  --color-primary-hover: color-mix(in srgb, var(--color-primary) 82%, black);
+  --color-primary-soft: color-mix(in srgb, var(--color-primary) 7%, white);
+  --color-primary-muted: color-mix(in srgb, var(--color-primary) 16%, white);
+  --color-primary-glow: color-mix(in srgb, var(--color-primary) 18%, transparent);
   --color-secondary: #{$color-secondary};
   --color-success: #{$color-success};
   --color-success-soft: #{$color-success-soft};
@@ -63,7 +64,6 @@
   --color-text-primary: #{$color-text};
   --color-bg-primary: #{$color-bg-app};
   --color-primary-light: #{$color-primary-soft};
-  --color-primary-glow: #{$color-primary-glow};
   --color-text-placeholder: #{$color-text-faint};
   --color-text-inverse: #{$color-text-on-primary};
 }

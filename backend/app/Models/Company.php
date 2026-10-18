@@ -20,7 +20,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
     'name', 'trade_name', 'document', 'description',
     'zip_code', 'street', 'number', 'neighborhood', 'city', 'state', 'country', 'expires_at',
 ])]
-#[ProtectedColumns(['token'])]
+#[ProtectedColumns(['token', 'telegram_code'])]
 class Company extends Model
 {
     use Auditable, SoftDeletes;
@@ -31,7 +31,7 @@ class Company extends Model
 
     protected function casts(): array
     {
-        return ['expires_at' => 'date:Y-m-d'];
+        return ['expires_at' => 'date:Y-m-d', 'settings' => 'array'];
     }
 
     protected static function booted(): void

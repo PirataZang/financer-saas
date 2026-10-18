@@ -51,6 +51,42 @@ export function menuCard(firstName?: string, heading = `Olá${hello(firstName)}!
   return { text: heading, keyboard: InlineKeyboard.from([mainButtons]) }
 }
 
+export function disconnectCard(company: string): Card {
+  return {
+    text: [
+      '🔌 <b>Desconectar o bot</b>',
+      `Você está vinculado à empresa <b>${escapeHtml(company)}</b>.`,
+      'Ao desconectar, deixa de lançar por ela. Para usar de novo — nesta ou em outra empresa — basta enviar um código de vínculo.',
+      'Seus lançamentos já feitos continuam no sistema.',
+    ].join('\n\n'),
+    keyboard: InlineKeyboard.from([[button('Sim, desconectar', 'disconnect:yes')], [button('← Voltar', 'menu')]]),
+  }
+}
+
+/**
+ * Shown to anyone not linked (first contact, revoked, just disconnected, wrong code). Sent with
+ * CODE_INPUT: Telegram opens the reply box with a placeholder, so the code goes right in.
+ */
+export function codePrompt({ firstName, disconnectedFrom, error }: { firstName?: string; disconnectedFrom?: string; error?: string } = {}): string {
+  const opening = error
+    ? `⚠️ <b>${escapeHtml(error)}</b>\nConfira o código e digite de novo.`
+    : disconnectedFrom
+      ? `✅ <b>Bot desconectado</b>\nVocê não está mais vinculado à <b>${escapeHtml(disconnectedFrom)}</b>. Seus lançamentos continuam no sistema.`
+      : [
+          `👋 <b>Olá${hello(firstName)}! Boas-vindas ao seu assistente financeiro.</b>`,
+          'Aqui você registra receitas e despesas e consulta o balancete da sua empresa em poucos toques.',
+        ].join('\n\n')
+
+  return [
+    opening,
+    '🔑 <b>Conecte-se à sua empresa</b>\n• abra o link de vínculo que você recebeu, ou\n• digite o código abaixo (ex.: <code>ABCD-EFGH-JKLM</code>)',
+    '<i>O administrador encontra o link e o código em Configurações › Telegram.</i>',
+  ].join('\n\n')
+}
+
+/** Reply markup for codePrompt: the message box opens ready for the code. */
+export const CODE_INPUT = { force_reply: true, input_field_placeholder: 'Código de vínculo · ex.: ABCD-EFGH-JKLM' } as const
+
 export function typeCard(): Card {
   return {
     text: '<b>Novo lançamento</b>\n\nÉ uma receita ou uma despesa?',

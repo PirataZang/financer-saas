@@ -9,40 +9,7 @@
             </div>
 
             <form v-else @submit.prevent="submitForm">
-                <h3 class="form-section">Dados da empresa</h3>
-                <div class="form-grid">
-                    <Input class="col-6" v-model="form.name" label="Razão social / Nome" placeholder="Nome registrado da empresa..." required minlength="2" />
-
-                    <Input class="col-6" v-model="form.trade_name" label="Nome fantasia" placeholder="Como a empresa é conhecida" />
-
-                    <Input class="col-4" v-model="form.document" label="CPF / CNPJ" mask="cpf-cnpj" placeholder="000.000.000-00" />
-
-                    <TextArea class="col-12" v-model="form.description" label="Descrição" placeholder="Ramo de atuação, observações do contrato..." :rows="3" />
-                </div>
-
-                <h3 class="form-section">Endereço</h3>
-                <div class="form-grid">
-                    <div class="col-3">
-                        <Input v-model="form.zip_code" label="CEP" mask="cep" placeholder="00000-000" @blur="searchZipCode">
-                            <template v-if="zipLoading" #suffix>
-                                <i class="fa-solid fa-spinner fa-spin" aria-label="Buscando CEP" />
-                            </template>
-                        </Input>
-                        <p v-if="zipMessage" class="field-hint" :class="{ 'is-error': zipError }" role="status">{{ zipMessage }}</p>
-                    </div>
-
-                    <Input class="col-7" v-model="form.street" label="Rua" placeholder="Rua, avenida..." />
-
-                    <Input ref="numberInput" class="col-2" v-model="form.number" label="Número" placeholder="Ex.: 120" maxlength="20" />
-
-                    <Input class="col-4" v-model="form.neighborhood" label="Bairro" />
-
-                    <Input class="col-4" v-model="form.city" label="Cidade" />
-
-                    <Input class="col-2" v-model="form.state" label="Estado" placeholder="UF" />
-
-                    <Input class="col-2" v-model="form.country" label="País" />
-                </div>
+                <CompanyFields ref="fields" v-model="form" />
 
                 <div class="license-heading">
                     <h3 class="form-section">Licença de acesso</h3>
@@ -86,14 +53,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { apiFetch } from '@/services/api'
-import { useZipCodeLookup } from '@/services/zipCode'
 import { swal } from '@/plugins/swal'
 import Input from '@/components/utils/Input.vue'
-import TextArea from '@/components/utils/TextArea.vue'
 import Button from '@/components/utils/Button.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import FormActions from '@/components/ui/FormActions.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
+import CompanyFields from '@/components/company/CompanyFields.vue'
 import { LICENSE_OPTIONS } from './license'
 
 const router = useRouter()
@@ -105,7 +71,7 @@ const isEdit = computed(() => !!companyId.value)
 const loading = ref(false)
 const saving = ref(false)
 const error = ref('')
-const numberInput = ref(null)
+const fields = ref(null)
 
 const token = ref(null)
 const active = ref(false)
@@ -127,8 +93,6 @@ const form = ref({
     expires_at: '',
 })
 
-const { zipLoading, zipMessage, zipError, searchZipCode, markZipLoaded } = useZipCodeLookup(form, numberInput)
-
 const license = computed(() => LICENSE_OPTIONS.find((option) => option.value === active.value))
 
 const applyCompany = (data) => {
@@ -148,7 +112,7 @@ const fetchCompany = async () => {
         const response = await apiFetch(`/companies/${companyId.value}`)
         if (!response.ok) throw new Error('Não foi possível carregar os dados desta empresa.')
         applyCompany(await response.json())
-        markZipLoaded()
+        fields.value?.markZipLoaded()
     } catch (err) {
         error.value = err.message
     } finally {
@@ -235,15 +199,8 @@ onMounted(fetchCompany)
     font-size: 0.9rem;
 }
 
-.form-section {
-    margin: 0 0 14px;
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: var(--color-text);
-}
-
-.form-grid + .form-section,
-.form-grid + .license-heading {
+.form-grid + .license-heading,
+.company-fields + .license-heading {
     margin-top: 24px;
     padding-top: 20px;
     border-top: 1px solid var(--color-border);
@@ -258,18 +215,6 @@ onMounted(fetchCompany)
 
 .license-heading .form-section {
     margin: 0;
-}
-
-.field-hint {
-    margin: 6px 0 0;
-    font-size: 0.75rem;
-    line-height: 1.45;
-    color: var(--color-text-muted);
-    max-width: 72ch;
-}
-
-.field-hint.is-error {
-    color: var(--color-danger);
 }
 
 .license-note {

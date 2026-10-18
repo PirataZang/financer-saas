@@ -36,8 +36,9 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { PREFERENCE_PREFIX, useAuthStore } from '@/stores/auth'
+import { useAuthStore } from '@/stores/auth'
 import { canAccessRoute } from '@/permissions'
+import { applyAppearance, resetAppearance } from '@/utils/theme'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import GlobalSearch from '@/components/layout/GlobalSearch.vue'
 import CompanySwitcher from '@/components/layout/CompanySwitcher.vue'
@@ -47,30 +48,29 @@ const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
-// Menu opens/closes only with the toggle (no hover) and stays as the user left it, per browser.
-// First visit: open on wide screens. Small screens: floats over the content, closes on navigation.
-const MENU_KEY = `${PREFERENCE_PREFIX}menu_expanded`
+// Menu opens/closes only with the toggle (no hover) and stays as the user left it: a user preference
+// (Configurações › Preferências), so it follows them across devices. Never set: open on wide screens.
+// Small screens: floats over the content, closes on navigation.
 const isSmallScreen = () => window.matchMedia('(max-width: 900px)').matches
-const readMenuPreference = () => {
-  try {
-    const stored = localStorage.getItem(MENU_KEY)
-    return stored === null ? window.innerWidth >= 1200 : stored === '1'
-  } catch {
-    return !isSmallScreen()
-  }
-}
-const menuExpanded = ref(!isSmallScreen() && readMenuPreference())
+const menuExpanded = ref(!isSmallScreen() && (auth.preferences.sidebar_expanded ?? window.innerWidth >= 1200))
 
 const setMenu = (open) => {
   menuExpanded.value = open
   // The overlay state on a phone isn't a preference worth remembering.
-  if (isSmallScreen()) return
-  try {
-    localStorage.setItem(MENU_KEY, open ? '1' : '0')
-  } catch {
-    // Storage blocked (private mode): the toggle still works for this visit.
-  }
+  if (!isSmallScreen()) auth.savePreferences({ sidebar_expanded: open }).catch(() => {})
 }
+
+// Changed in Configurações › Preferências (or on another device, via the session poll).
+watch(
+  () => auth.preferences.sidebar_expanded,
+  (open) => {
+    if (open != null && !isSmallScreen()) menuExpanded.value = open
+  },
+)
+
+// Company appearance (color, name) for the whole app; the login screen goes back to the default.
+watch(() => auth.settings.appearance, applyAppearance, { immediate: true })
+onUnmounted(resetAppearance)
 
 watch(
   () => route.fullPath,

@@ -2,7 +2,7 @@
     <div class="grid-wrapper ag-theme-quartz" :class="{ 'auto-height': isAutoHeight }">
         <AgGridVue class="grid" theme="legacy" :rowData="rowData" :columnDefs="columnDefs" :columnTypes="columnTypes"
             :defaultColDef="defaultColDef" :localeText="localeText" :rowSelection="rowSelectionConfig"
-            :context="context" :domLayout="domLayout" @grid-ready="onGridReady" @selection-changed="onSelectionChanged"
+            :context="context" :domLayout="domLayout" :rowHeight="rowHeight" @grid-ready="onGridReady" @selection-changed="onSelectionChanged"
             @row-clicked="onRowClicked" @row-double-clicked="onRowDoubleClicked" />
 
         <!-- Painel de Paginação Premium Customizado -->
@@ -54,6 +54,7 @@ import { ref, computed, h, defineComponent, markRaw } from 'vue'
 import { AgGridVue } from 'ag-grid-vue3'
 import { ModuleRegistry, ClientSideRowModelModule, CellStyleModule, RowSelectionModule, TextFilterModule, NumberFilterModule, DateFilterModule, LocaleModule, ValidationModule } from 'ag-grid-community'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
+import { useAuthStore } from '@/stores/auth'
 
 // Imports dos estilos do AG Grid
 import 'ag-grid-community/styles/ag-grid.css'
@@ -126,6 +127,8 @@ const rowSelectionConfig = computed(() => {
 })
 
 const isAutoHeight = computed(() => props.gridHeight === 'auto')
+// Configurações › Preferências: compact rows fit more on screen; undefined = theme default (42px).
+const rowHeight = computed(() => (useAuthStore().preferences.table_density === 'compact' ? 34 : undefined))
 const domLayout = computed(() => isAutoHeight.value ? 'autoHeight' : 'normal')
 
 const localeText = {
@@ -288,7 +291,7 @@ const changePageSize = (event) => {
 
 .grid-wrapper .grid :deep(.ag-row:hover) {
     background-color: #eff6ff !important;
-    border-left-color: var(--color-primary, #2563eb);
+    border-left-color: var(--color-primary);
 }
 
 .grid-wrapper .grid :deep(.bool-icon) {
