@@ -32,6 +32,24 @@ return [
             'delete' => 'Excluir clientes',
         ],
     ],
+    'projects' => [
+        'name' => 'Projetos',
+        'actions' => [
+            'view' => 'Visualizar projetos de clientes',
+            'create' => 'Cadastrar projetos de clientes',
+            'update' => 'Editar projetos de clientes (dados e etapas)',
+            'delete' => 'Excluir projetos de clientes',
+        ],
+    ],
+    'announcements' => [
+        'name' => 'Avisos do portal',
+        'actions' => [
+            'view' => 'Visualizar avisos do portal do cliente',
+            'create' => 'Publicar avisos no portal do cliente',
+            'update' => 'Editar avisos do portal do cliente',
+            'delete' => 'Excluir avisos do portal do cliente',
+        ],
+    ],
     'finance' => [
         'name' => 'Financeiro',
         'actions' => [
@@ -54,6 +72,7 @@ return [
             'appearance' => 'Personalizar a aparência do sistema',
             'finance' => 'Alterar os padrões do financeiro',
             'telegram' => 'Gerenciar o bot do Telegram (código de vínculo e contas)',
+            'portal' => 'Configurar o portal do cliente (link e dados de pagamento)',
         ],
     ],
 ];

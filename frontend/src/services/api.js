@@ -1,4 +1,5 @@
 import { isCompanyInactive, useAuthStore } from '@/stores/auth'
+import { usePortalStore } from '@/stores/portal'
 
 // Base de todas as chamadas à API. Vem de VITE_API_URL no .env da raiz:
 // local http://localhost:8000/api (backend direto), VPS /peppercore-admin/api (rota do Nginx).
@@ -34,6 +35,27 @@ export async function apiFetch(url, options = {}) {
   // Permission changed server-side: resync so menus/buttons stop offering the action.
   if (response.status === 403) {
     auth.refreshUser().catch(() => {})
+  }
+
+  return response
+}
+
+// Portal do cliente: its own session (a customer's, never a user's), so both can be open in one browser.
+// 401 or an inactive company ends the portal session and goes back to the portal's login.
+export async function portalFetch(url, options = {}) {
+  const portal = usePortalStore()
+  const headers = {
+    Accept: 'application/json',
+    ...(portal.token ? { Authorization: `Bearer ${portal.token}` } : {}),
+    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+    ...(options.headers || {}),
+  }
+
+  const response = await fetch(API_URL + url, { ...options, headers })
+
+  if (response.status === 401 || (await isCompanyInactive(response))) {
+    await portal.logout({ remote: false })
+    throw new Error('Sessão expirada. Entre novamente.')
   }
 
   return response

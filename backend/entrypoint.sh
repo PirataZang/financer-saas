@@ -31,6 +31,9 @@ if [ -f "artisan" ]; then
         fi
     fi
 
+    # Laravel's writable dirs aren't in the repo: compiled views (e-mails), file cache, sessions.
+    mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views
+
     # Run migrations
     echo "🌶️  Running migrations..."
     php artisan migrate --force --seed

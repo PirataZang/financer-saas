@@ -28,6 +28,11 @@ class SettingsService
             // "Today" for entries and balancetes made through the Telegram bot.
             'timezone' => 'America/Sao_Paulo',
         ],
+        // Portal do cliente: how customers pay their bills (shown next to each pending one).
+        'portal' => [
+            'pix_key' => null,
+            'payment_instructions' => null,
+        ],
     ];
 
     public const PREFERENCE_DEFAULTS = [
@@ -101,6 +106,10 @@ class SettingsService
                 'default_status' => ['sometimes', Rule::enum(TransactionStatus::class)],
                 'default_period' => ['sometimes', Rule::in(self::PERIODS)],
                 'timezone' => ['sometimes', 'timezone:all'],
+            ],
+            'portal' => [
+                'pix_key' => ['sometimes', 'nullable', 'string', 'max:140'],
+                'payment_instructions' => ['sometimes', 'nullable', 'string', 'max:1000'],
             ],
         };
     }

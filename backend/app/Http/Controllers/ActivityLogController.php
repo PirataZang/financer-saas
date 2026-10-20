@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Company;
 use App\Models\Customer;
+use App\Models\Project;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -21,6 +22,7 @@ class ActivityLogController extends Controller
     private const SUBJECT_MAP = [
         'user' => [User::class, 'users.view'],
         'customer' => [Customer::class, 'customers.view'],
+        'project' => [Project::class, 'projects.view'],
         'category' => [Category::class, 'finance.category.view'],
         'transaction' => [Transaction::class, 'finance.transaction.view'],
         'company' => [Company::class, 'master'],

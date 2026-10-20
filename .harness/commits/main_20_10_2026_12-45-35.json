@@ -1,0 +1,347 @@
+{
+  "branch": "main",
+  "created_at": "2026-10-20T15:45:35.996Z",
+  "author": {
+    "name": "Igor Fronza",
+    "email": "igorfronza20@gmail.com"
+  },
+  "parent": "eac7b09a842b19c599eccb5432e413076a5068c1",
+  "notes": null,
+  "stats": {
+    "files": 55,
+    "additions": 4165,
+    "deletions": 3
+  },
+  "files": [
+    {
+      "status": "M",
+      "path": "CHANGELOG.md",
+      "additions": 16,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "README.md",
+      "additions": 10,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Enums/ProjectStatus.php",
+      "additions": 50,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Enums/ProjectStepStatus.php",
+      "additions": 41,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Http/Controllers/ActivityLogController.php",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/AnnouncementController.php",
+      "additions": 55,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Http/Controllers/CustomerController.php",
+      "additions": 9,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/Portal/PortalController.php",
+      "additions": 82,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/ProjectController.php",
+      "additions": 75,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Http/Controllers/SettingsController.php",
+      "additions": 20,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Middleware/PortalMiddleware.php",
+      "additions": 42,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Models/Announcement.php",
+      "additions": 19,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Models/Company.php",
+      "additions": 10,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Models/Customer.php",
+      "additions": 6,
+      "deletions": 1
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Models/Project.php",
+      "additions": 70,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Models/ProjectStep.php",
+      "additions": 23,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Models/Transaction.php",
+      "additions": 7,
+      "deletions": 1
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Notifications/PortalCode.php",
+      "additions": 33,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/AnnouncementService.php",
+      "additions": 57,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/CustomerService.php",
+      "additions": 10,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/PortalService.php",
+      "additions": 265,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/ProjectService.php",
+      "additions": 108,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/SettingsService.php",
+      "additions": 9,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/TransactionService.php",
+      "additions": 3,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/bootstrap/app.php",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/config/permissions.php",
+      "additions": 19,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/config/rate-limit.php",
+      "additions": 6,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/database/migrations/0001_01_01_000009_create_portal_tables.php",
+      "additions": 76,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/entrypoint.sh",
+      "additions": 3,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/routes/api.php",
+      "additions": 43,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/storage/framework/.gitignore",
+      "additions": 3,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/tests/Feature/AuthorizationTest.php",
+      "additions": 6,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Feature/PortalTest.php",
+      "additions": 219,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "design.md",
+      "additions": 35,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/customer/CustomerSelect.vue",
+      "additions": 26,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/portal/AnnouncementCard.vue",
+      "additions": 78,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/layouts/PortalLayout.vue",
+      "additions": 427,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/announcement/AnnouncementForm.vue",
+      "additions": 101,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/announcement/AnnouncementList.vue",
+      "additions": 140,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/finance/TransactionForm.vue",
+      "additions": 9,
+      "deletions": 1
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/portal/PortalAnnouncements.vue",
+      "additions": 47,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/portal/PortalBills.vue",
+      "additions": 235,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/portal/PortalHome.vue",
+      "additions": 253,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/portal/PortalLogin.vue",
+      "additions": 326,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/portal/PortalProject.vue",
+      "additions": 258,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/project/ProjectForm.vue",
+      "additions": 250,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/project/ProjectList.vue",
+      "additions": 184,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/settings/PortalTab.vue",
+      "additions": 133,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/settings/Settings.vue",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/permissions.js",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/router/index.js",
+      "additions": 125,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/services/api.js",
+      "additions": 22,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/stores/portal.js",
+      "additions": 83,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/utils/date.js",
+      "additions": 17,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/utils/date.test.js",
+      "additions": 15,
+      "deletions": 0
+    }
+  ]
+}

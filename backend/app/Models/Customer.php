@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Attributes\ProtectedColumns;
 use App\Enums\CustomerStatus;
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BelongsToCompany;
@@ -10,16 +11,19 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Validation\ValidationException;
 
 #[Fillable([
     'name', 'email', 'phone', 'status', 'active',
     'zip_code', 'street', 'number', 'complement', 'neighborhood', 'reference', 'city', 'state', 'country',
 ])]
+// portal_token: hash of the customer's portal session (Portal do cliente), like users.token.
+#[ProtectedColumns(['portal_token'])]
 class Customer extends Model
 {
     /** @use HasFactory<CustomerFactory> */
-    use HasFactory, Auditable, BelongsToCompany, SoftDeletes;
+    use HasFactory, Auditable, BelongsToCompany, Notifiable, SoftDeletes;
 
     protected $appends = ['status_label'];
 
@@ -34,6 +38,7 @@ class Customer extends Model
         return [
             'status' => CustomerStatus::class,
             'active' => 'boolean',
+            'portal_expire_at' => 'datetime',
         ];
     }
 

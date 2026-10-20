@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { usePortalStore } from '@/stores/portal'
 import { canAccessRoute, menuItems } from '@/permissions'
 import { swal } from '@/plugins/swal'
 import AppLayout from '@/layouts/AppLayout.vue'
@@ -18,6 +19,17 @@ import TransactionForm from '@/pages/finance/TransactionForm.vue'
 import CompanyList from '@/pages/company/CompanyList.vue'
 import CompanyForm from '@/pages/company/CompanyForm.vue'
 import Settings from '@/pages/settings/Settings.vue'
+import ProjectList from '@/pages/project/ProjectList.vue'
+import ProjectForm from '@/pages/project/ProjectForm.vue'
+import AnnouncementList from '@/pages/announcement/AnnouncementList.vue'
+import AnnouncementForm from '@/pages/announcement/AnnouncementForm.vue'
+// Portal do cliente: lazy chunks, so the CRM bundle doesn't carry the portal screens.
+const PortalLayout = () => import('@/layouts/PortalLayout.vue')
+const PortalLogin = () => import('@/pages/portal/PortalLogin.vue')
+const PortalHome = () => import('@/pages/portal/PortalHome.vue')
+const PortalProject = () => import('@/pages/portal/PortalProject.vue')
+const PortalBills = () => import('@/pages/portal/PortalBills.vue')
+const PortalAnnouncements = () => import('@/pages/portal/PortalAnnouncements.vue')
 
 
 // Single source for navigation: meta.permission protects the route (guard), and
@@ -29,6 +41,25 @@ const routes = [
     name: 'Login',
     component: Login,
     meta: { public: true },
+  },
+  // Portal do cliente: another access (customer session, stores/portal.js), outside the CRM shell.
+  // meta.portal routes skip the CRM guard; /portal/<slug>/entrar is its login.
+  {
+    path: '/portal/:slug/entrar',
+    name: 'PortalLogin',
+    component: PortalLogin,
+    meta: { portal: true, public: true },
+  },
+  {
+    path: '/portal/:slug',
+    component: PortalLayout,
+    meta: { portal: true },
+    children: [
+      { path: '', name: 'PortalHome', component: PortalHome },
+      { path: 'contas', name: 'PortalBills', component: PortalBills },
+      { path: 'avisos', name: 'PortalAnnouncements', component: PortalAnnouncements },
+      { path: 'projetos/:id', name: 'PortalProject', component: PortalProject, props: true },
+    ],
   },
   {
     path: '/',
@@ -98,6 +129,89 @@ const routes = [
         component: CustomerForm,
         props: true,
         meta: { permission: 'customers.update' },
+      },
+      // Portal do cliente: what the company publishes for its customers (meta.menu.group 'portal').
+      {
+        path: 'project',
+        name: 'ProjectList',
+        component: ProjectList,
+        meta: {
+          permission: 'projects.view',
+          menu: {
+            label: 'Projetos',
+            icon: 'fa-solid fa-diagram-project',
+            description: 'Projetos dos clientes, com etapas e progresso',
+            keywords: ['portal', 'cliente', 'etapas', 'progresso', 'entrega', 'acompanhamento'],
+            module: 'Portal do cliente',
+            group: 'portal',
+            order: 17,
+          },
+        },
+      },
+      {
+        path: 'project/form',
+        name: 'ProjectCreate',
+        component: ProjectForm,
+        meta: {
+          permission: 'projects.create',
+          menu: {
+            label: 'Novo projeto',
+            icon: 'fa-solid fa-plus',
+            description: 'Cadastrar o projeto de um cliente',
+            keywords: ['cadastrar', 'incluir', 'portal', 'etapas'],
+            module: 'Portal do cliente',
+            order: 18,
+            sidebar: false,
+          },
+        },
+      },
+      {
+        path: 'project/form/:id',
+        name: 'ProjectEdit',
+        component: ProjectForm,
+        props: true,
+        meta: { permission: 'projects.update' },
+      },
+      {
+        path: 'announcement',
+        name: 'AnnouncementList',
+        component: AnnouncementList,
+        meta: {
+          permission: 'announcements.view',
+          menu: {
+            label: 'Avisos',
+            icon: 'fa-solid fa-bullhorn',
+            description: 'Comunicados publicados no portal do cliente',
+            keywords: ['portal', 'cliente', 'comunicado', 'mural', 'notícia', 'recado'],
+            module: 'Portal do cliente',
+            group: 'portal',
+            order: 18,
+          },
+        },
+      },
+      {
+        path: 'announcement/form',
+        name: 'AnnouncementCreate',
+        component: AnnouncementForm,
+        meta: {
+          permission: 'announcements.create',
+          menu: {
+            label: 'Novo aviso',
+            icon: 'fa-solid fa-bullhorn',
+            description: 'Publicar um aviso no portal do cliente',
+            keywords: ['publicar', 'comunicado', 'portal'],
+            module: 'Portal do cliente',
+            order: 19,
+            sidebar: false,
+          },
+        },
+      },
+      {
+        path: 'announcement/form/:id',
+        name: 'AnnouncementEdit',
+        component: AnnouncementForm,
+        props: true,
+        meta: { permission: 'announcements.update' },
       },
       // Financeiro: meta.menu.group nests these under "Financeiro" in the sidebar.
       {
@@ -324,7 +438,18 @@ function firstAccessibleRoute() {
 
 let userRefreshed = false
 
+// Portal do cliente: only its own session counts (a CRM login doesn't open it, and vice versa).
+function portalGuard(to) {
+  const portal = usePortalStore()
+  portal.restore()
+  const loggedIn = portal.sessionFor(to.params.slug)
+  if (to.meta.public) return loggedIn ? { name: 'PortalHome', params: { slug: to.params.slug } } : true
+  return loggedIn || { name: 'PortalLogin', params: { slug: to.params.slug } }
+}
+
 router.beforeEach(async (to, from) => {
+  if (to.meta.portal) return portalGuard(to)
+
   const auth = useAuthStore()
   auth.restoreSession()
 

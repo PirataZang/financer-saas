@@ -42,6 +42,15 @@ class CustomerController extends Controller
     }
 
     /**
+     * Active customers for selects (CustomerSelect).
+     */
+    #[Permission('customers.view')]
+    public function options(): JsonResponse
+    {
+        return response()->json($this->customerService->options());
+    }
+
+    /**
      * Display the specified customer.
      */
     #[Permission('customers.view')]

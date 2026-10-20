@@ -83,6 +83,16 @@ class Company extends Model
         return Attribute::get(fn () => $this->isActive());
     }
 
+    /** Public address of the company's Portal do cliente (/portal/<slug>), created the first time it's asked for. */
+    public function portalSlug(): string
+    {
+        if (!$this->portal_slug) {
+            $this->forceFill(['portal_slug' => Str::limit(Str::slug($this->trade_name ?: $this->name), 60, '')."-{$this->id}"])->save();
+        }
+
+        return $this->portal_slug;
+    }
+
     public function regenerateToken(): void
     {
         $this->forceFill(['token' => Str::random(40)])->save();

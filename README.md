@@ -79,6 +79,16 @@ docker compose exec postgres psql -U <db_user> -d <db_name> -c "UPDATE users SET
 Formulário público de clientes: `POST /api/public/{token-da-empresa}/customers`. Regras e padrões em
 `design.md` (seção 12).
 
+## Portal do cliente
+
+Acesso dos **clientes** da empresa (celular primeiro), só leitura: projetos com etapas e progresso, contas
+(receitas pendentes vinculadas ao cliente, com a chave PIX da empresa) e avisos. O link sai em
+**Configurações › Portal do cliente** (`/portal/<slug>/entrar`). O cliente informa o e-mail do cadastro e recebe
+um código de 6 dígitos por e-mail — configure o SMTP (`MAIL_*` no `backend/.env`); em dev, com
+`MAIL_MAILER=log`, o código aparece em `backend/storage/logs/laravel.log`. Projetos e avisos ficam no menu
+**Portal do cliente**; para virar conta no portal, a receita precisa ter o campo **Cliente**. Detalhes em
+`design.md` (seção 16).
+
 ## Bot do Telegram
 
 Container `bot` (pasta `bot/`, Node + TypeScript). No `.env` da raiz:

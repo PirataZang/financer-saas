@@ -31,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'master' => \App\Http\Middleware\EnsureMaster::class,
             'permission' => \App\Http\Middleware\CheckPermission::class,
             'bot' => \App\Http\Middleware\BotMiddleware::class,
+            'portal' => \App\Http\Middleware\PortalMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

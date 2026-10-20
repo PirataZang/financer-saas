@@ -61,6 +61,26 @@ class SettingsController extends Controller
         return response()->json($this->settingsService->updateSection('finance', $validated));
     }
 
+    /** Payment info + the portal address (/portal/<slug>, created on first visit). */
+    #[Permission('settings.portal')]
+    public function portal(): JsonResponse
+    {
+        $company = $this->settingsService->company();
+
+        return response()->json([
+            'values' => SettingsService::for($company)['portal'],
+            'slug' => $company->portalSlug(),
+        ]);
+    }
+
+    #[Permission('settings.portal')]
+    public function updatePortal(Request $request): JsonResponse
+    {
+        $validated = $request->validate($this->settingsService->sectionRules('portal'));
+
+        return response()->json($this->settingsService->updateSection('portal', $validated));
+    }
+
     #[Permission('settings.telegram')]
     public function telegram(): JsonResponse
     {

@@ -32,3 +32,19 @@ Como escrever:
 -->
 
 ## [Unreleased]
+
+### Added
+
+- **Portal do cliente**: novo acesso para os clientes da empresa, pensado para o celular. O cliente entra com o
+  e-mail do cadastro e um código enviado por e-mail e acompanha seus projetos (etapas e progresso), suas contas
+  (em aberto, vencidas e pagas, com a chave PIX para copiar) e os avisos da empresa. Só leitura.
+- **Projetos** (menu Portal do cliente): projetos por cliente com status, datas e etapas ordenáveis; o progresso
+  sai das etapas concluídas. Com histórico de alterações.
+- **Avisos** (menu Portal do cliente): comunicados para todos os clientes ou para o cliente de um projeto.
+- **Cliente na receita**: vincular uma receita a um cliente faz ela aparecer no portal dele como conta.
+- **Configurações › Portal do cliente**: link do portal para enviar aos clientes, chave PIX e instruções de pagamento.
+
+### Fixed
+
+- **E-mails**: o backend cria as pastas de cache/views do Laravel na subida do container; sem elas, nenhum
+  e-mail era renderizado.

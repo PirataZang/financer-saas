@@ -412,5 +412,40 @@ permissão). Backend: `SettingsController` + `SettingsService` (dono das chaves,
 - **Financeiro** — status inicial do formulário de transação, período inicial da lista e do dashboard financeiro,
   fuso horário do bot.
 - **Telegram** — código/link de vínculo (gerar, gerar novo, revogar) e contas vinculadas (revogar, reativar, remover).
+- **Portal do cliente** — link do portal (copiar/abrir) e dados de pagamento (chave PIX, instruções) — seção 16.
 - **Preferências** — menu aberto ou só ícones (o botão do topo grava a mesma preferência), densidade das tabelas
   (`AgGrid` usa linha de 34px na compacta) e página inicial (só telas que o usuário acessa; senão o 1º item do menu).
+
+## 16. Portal do cliente
+
+Outro acesso, para os **clientes** da empresa (tabela `customers`), só leitura: acompanhar projetos, ver contas e
+avisos. Mobile first. O cliente nunca altera nada — as rotas do portal são todas GET (mais o logout).
+
+- **Endereço** — `/portal/<slug>/entrar` (front). O slug (`companies.portal_slug`, público, não é segredo) nasce
+  na 1ª visita a Configurações › Portal do cliente (`Company::portalSlug()`, `<nome>-<id>`). Nunca use o token
+  da empresa (licença) num link de cliente.
+- **Acesso** (`PortalService`) — 1) e-mail: precisa ser de um cliente **ativo da empresa do slug** (outra empresa
+  = "não encontrado"; dois cadastros ativos com o mesmo e-mail = pede para falar com a empresa); 2) código de 6
+  dígitos por e-mail (notificação `PortalCode`), 10 min, morre após 5 erros ou quando outro é pedido. Guardado no
+  cache só como hash e escalares (o Redis não desserializa objetos). Sessão: bearer de 30 dias, salvo como sha256
+  em `customers.portal_token` (coluna protegida). Limites: `throttle:portal-code` no envio, `authentication` no login.
+- **Proteção** — middleware `portal` (`PortalMiddleware`): resolve o cliente pelo token, bloqueia empresa inativa
+  (403 `COMPANY_INACTIVE`) e escopa a requisição à empresa dele (`Company::as`). Todo dado ainda filtra pelo
+  `customer_id` do cliente logado (projeto de outro cliente = 404). Token de usuário do CRM não abre o portal e
+  vice-versa. As respostas são montadas campo a campo (`projectPayload` etc.) — nada de `toArray()` do model.
+  `AuthorizationTest` ignora rotas com `portal` (como `master`); as três públicas estão na lista explícita.
+- **Dados** — `projects` (cliente, status `ProjectStatus`, datas, soft delete, `Auditable`) com `project_steps`
+  (ordem = posição; o formulário manda a lista inteira e ela substitui a anterior). Progresso = etapas concluídas
+  / total (sem etapas: 100% só se concluído). `announcements`: sem `project_id` = todos os clientes; com = só o
+  cliente do projeto. **Contas** = receitas com `finance_transactions.customer_id`: pendentes (vencida = data
+  antes de hoje no fuso da empresa) e as 24 últimas pagas. A baixa continua manual no Financeiro.
+- **CRM** — menu Portal do cliente › Projetos / Avisos (`projects.*`, `announcements.*`); campo Cliente na receita
+  (`CustomerSelect`, `GET /customers/options`); Configurações › Portal do cliente (`settings.portal`): link, chave
+  PIX e instruções (`companies.settings.portal`).
+- **Front** — rotas `meta.portal` fora do `AppLayout`, com guard próprio (`portalGuard`); sessão em
+  `stores/portal.js` (chaves `financial_botportal_*`, separada da do CRM), chamadas por `portalFetch`
+  (`services/api.js`). `PortalLayout`: topo com a marca da empresa (cor e nome de Aparência) e abas Início /
+  Contas / Avisos — barra fixa embaixo no celular (área segura do iPhone), no topo a partir de 768px. Blocos
+  compartilhados (`.p-card`, `.p-section`, `.p-progress`, `.p-state`) no `<style>` global do layout.
+- **E-mail** — produção precisa de `MAIL_*` (SMTP) no `.env` do backend; com `MAIL_MAILER=log` o código sai em
+  `storage/logs/laravel.log`.

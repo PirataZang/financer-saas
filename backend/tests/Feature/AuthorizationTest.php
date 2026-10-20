@@ -212,11 +212,17 @@ class AuthorizationTest extends TestCase
             'App\Http\Controllers\Bot\BotController@categories',
             'App\Http\Controllers\Bot\BotController@summary',
             'App\Http\Controllers\Bot\BotController@createTransaction',
+            // Portal do cliente, before the customer is known (portal slug + throttle).
+            'App\Http\Controllers\Portal\PortalController@brand',
+            'App\Http\Controllers\Portal\PortalController@sendCode',
+            'App\Http\Controllers\Portal\PortalController@login',
         ];
 
         $unprotected = collect(Route::getRoutes()->getRoutes())
             // The restricted area (companies, status) is guarded by the `master` middleware instead.
             ->reject(fn ($route) => in_array('master', $route->gatherMiddleware(), true))
+            // Portal do cliente sessions: PortalMiddleware (customer token), read-only.
+            ->reject(fn ($route) => in_array('portal', $route->gatherMiddleware(), true))
             ->map->getActionName()
             ->filter(fn (string $action) => str_starts_with($action, 'App\\Http\\Controllers\\'))
             ->reject(fn (string $action) => in_array($action, $authOnly, true))

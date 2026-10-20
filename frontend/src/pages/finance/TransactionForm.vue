@@ -22,6 +22,11 @@
           <Input class="col-8" v-model="form.description" label="Descrição" placeholder="Ex.: Compra do supermercado" required maxlength="255" />
           <CategorySelect class="col-4" v-model="form.category_id" label="Categoria" :type="form.type" placeholder="Selecione..." :disabled="readOnly" />
 
+          <div v-if="form.type === 'income' && auth.can('customers.view')" class="col-8">
+            <CustomerSelect v-model="form.customer_id" label="Cliente" placeholder="Nenhum" clearable :disabled="readOnly" />
+            <p class="field-hint">Com um cliente, a receita aparece no portal dele (pendente = conta a pagar).</p>
+          </div>
+
           <!-- A series is created at once; afterwards each entry is edited on its own. -->
           <template v-if="!isEdit">
             <Select class="col-4" v-model="repeat.mode" label="Repetição" :options="REPEAT_OPTIONS" />
@@ -62,6 +67,7 @@ import Button from '@/components/utils/Button.vue'
 import Input from '@/components/utils/Input.vue'
 import Select from '@/components/utils/Select.vue'
 import CategorySelect from '@/components/finance/CategorySelect.vue'
+import CustomerSelect from '@/components/customer/CustomerSelect.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import FormActions from '@/components/ui/FormActions.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
@@ -99,7 +105,7 @@ const error = ref('')
 const source = ref('')
 const options = ref({ types: [], statuses: [], sources: [] })
 // New entries start with the company's default status (Configurações › Financeiro).
-const form = ref({ type: 'expense', amount: '', date: toDateString(new Date()), status: auth.settings.finance.default_status || 'paid', description: '', category_id: '' })
+const form = ref({ type: 'expense', amount: '', date: toDateString(new Date()), status: auth.settings.finance.default_status || 'paid', description: '', category_id: '', customer_id: '' })
 const repeat = ref({ mode: 'none', count: 2 })
 // Set by "Salvar e lançar outra" right before the form submits (Enter / "Salvar" leave it false).
 let another = false
@@ -125,8 +131,10 @@ const repeatHint = computed(() => {
 })
 
 // The category list follows the type; a category that doesn't accept the new type must be re-picked.
+// Only incomes are bills, so an expense drops the customer.
 const onTypeChange = () => {
   form.value.category_id = ''
+  if (form.value.type !== 'income') form.value.customer_id = ''
 }
 
 // The list keeps its filters in its URL: going back restores them; opened directly, push the plain list.

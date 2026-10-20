@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Enums\TransactionSource;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
+use App\Models\Company;
 use App\Models\Transaction;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -145,6 +146,8 @@ class TransactionService
             'amount' => [$required, 'numeric', 'decimal:0,2', 'gt:0', 'max:9999999999999'],
             'description' => [$required, 'string', 'max:255'],
             'category_id' => [$required, 'integer'],
+            // Income linked to a customer = a bill in their portal.
+            'customer_id' => ['sometimes', 'nullable', 'integer', Rule::exists('customers', 'id')->where('company_id', Company::current())->whereNull('deleted_at')],
             'date' => [$required, 'date_format:Y-m-d'],
             'status' => ['sometimes', Rule::enum(TransactionStatus::class)],
         ];

@@ -31,6 +31,12 @@ return [
         'decay_seconds' => (int) env('RATE_LIMIT_AUTH_DECAY', 30),
     ],
 
+    // Portal do cliente: e-mail checks + code e-mails (each one also lands in a customer's inbox).
+    'portal-code' => [
+        'max_attempts' => (int) env('RATE_LIMIT_PORTAL_CODE_MAX', 10),
+        'decay_seconds' => (int) env('RATE_LIMIT_PORTAL_CODE_DECAY', 600),
+    ],
+
     // Telegram bot (routes/api.php `bot`). Every bot request comes from the same container IP,
     // so these are keyed per Telegram user (`by_header`, set by the bot and checked by BotMiddleware).
     'bot' => [

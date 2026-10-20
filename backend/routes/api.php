@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Bot\BotController;
 use App\Http\Controllers\CategoryController;
@@ -8,6 +9,8 @@ use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\Portal\PortalController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UserController;
@@ -39,6 +42,25 @@ Route::prefix('bot')->group(function () {
     });
 });
 
+// Portal do cliente (read-only for the customer). Session routes first: a portal slug always ends
+// in "-<company id>", so it never collides with them. PortalMiddleware scopes to the customer's company.
+Route::prefix('portal')->group(function () {
+    Route::middleware('portal')->group(function () {
+        Route::get('/me', [PortalController::class, 'me']);
+        Route::get('/projects', [PortalController::class, 'projects']);
+        Route::get('/projects/{id}', [PortalController::class, 'project']);
+        Route::get('/announcements', [PortalController::class, 'announcements']);
+        Route::get('/bills', [PortalController::class, 'bills']);
+        Route::post('/logout', [PortalController::class, 'logout']);
+    });
+
+    Route::prefix('{slug}')->group(function () {
+        Route::get('/', [PortalController::class, 'brand']);
+        Route::post('/code', [PortalController::class, 'sendCode'])->middleware('throttle:portal-code');
+        Route::post('/login', [PortalController::class, 'login'])->middleware('throttle:authentication');
+    });
+});
+
 // 'company' scopes every query to the user's company (a master may switch with X-Company-Id)
 // and blocks inactive companies; 'permission' enforces each action's #[Permission].
 Route::middleware(['auth', 'company', 'permission'])->group(function () {
@@ -59,10 +81,29 @@ Route::middleware(['auth', 'company', 'permission'])->group(function () {
     Route::prefix('customers')->group(function () {
         Route::get('/', [CustomerController::class, 'list']);
         Route::get('/statuses', [CustomerController::class, 'statuses']);
+        Route::get('/options', [CustomerController::class, 'options']);
         Route::get('/{id}', [CustomerController::class, 'index']);
         Route::post('/', [CustomerController::class, 'create']);
         Route::put('/{id}', [CustomerController::class, 'update']);
         Route::delete('/{id}', [CustomerController::class, 'delete']);
+    });
+
+    Route::prefix('projects')->group(function () {
+        Route::get('/', [ProjectController::class, 'list']);
+        Route::get('/statuses', [ProjectController::class, 'statuses']);
+        Route::get('/options', [ProjectController::class, 'options']);
+        Route::get('/{id}', [ProjectController::class, 'index']);
+        Route::post('/', [ProjectController::class, 'create']);
+        Route::put('/{id}', [ProjectController::class, 'update']);
+        Route::delete('/{id}', [ProjectController::class, 'delete']);
+    });
+
+    Route::prefix('announcements')->group(function () {
+        Route::get('/', [AnnouncementController::class, 'list']);
+        Route::get('/{id}', [AnnouncementController::class, 'index']);
+        Route::post('/', [AnnouncementController::class, 'create']);
+        Route::put('/{id}', [AnnouncementController::class, 'update']);
+        Route::delete('/{id}', [AnnouncementController::class, 'delete']);
     });
 
     Route::prefix('finance')->group(function () {
@@ -97,6 +138,8 @@ Route::middleware(['auth', 'company', 'permission'])->group(function () {
         Route::put('/appearance', [SettingsController::class, 'updateAppearance']);
         Route::get('/finance', [SettingsController::class, 'finance']);
         Route::put('/finance', [SettingsController::class, 'updateFinance']);
+        Route::get('/portal', [SettingsController::class, 'portal']);
+        Route::put('/portal', [SettingsController::class, 'updatePortal']);
         Route::get('/telegram', [SettingsController::class, 'telegram']);
         Route::post('/telegram/code', [SettingsController::class, 'regenerateTelegramCode']);
         Route::delete('/telegram/code', [SettingsController::class, 'revokeTelegramCode']);

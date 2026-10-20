@@ -40,6 +40,16 @@ class CustomerService
     }
 
     /**
+     * Active customers for selects (projects, the customer of an income): { value, label }.
+     */
+    public function options(): array
+    {
+        return Customer::where('active', true)->orderBy('name')->get(['id', 'name', 'email'])
+            ->map(fn (Customer $c) => ['value' => $c->id, 'label' => $c->email ? "{$c->name} · {$c->email}" : $c->name])
+            ->all();
+    }
+
+    /**
      * Get a single customer by ID.
      */
     public function index(int $id): Customer
