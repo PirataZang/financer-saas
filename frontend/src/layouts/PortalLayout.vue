@@ -20,8 +20,12 @@
             :class="{ 'is-active': isActive(item) }"
             :aria-current="isActive(item) ? 'page' : undefined"
           >
-            <i :class="item.icon" aria-hidden="true" />
+            <span class="portal-nav__icon" :class="{ 'is-ringing': unseen(item) }">
+              <i :class="item.icon" aria-hidden="true" />
+              <span v-if="unseen(item)" class="portal-nav__badge" aria-hidden="true">{{ unseen(item) > 9 ? '9+' : unseen(item) }}</span>
+            </span>
             <span>{{ item.label }}</span>
+            <span v-if="unseen(item)" class="sr-only">({{ unseen(item) }} {{ unseen(item) === 1 ? 'novo' : 'novos' }})</span>
           </router-link>
         </nav>
 
@@ -53,7 +57,7 @@ import { applyAppearance, resetAppearance } from '@/utils/theme'
 const NAV = [
   { name: 'PortalHome', label: 'Início', icon: 'fa-solid fa-house', also: ['PortalProject'] },
   { name: 'PortalBills', label: 'Contas', icon: 'fa-solid fa-receipt' },
-  { name: 'PortalAnnouncements', label: 'Avisos', icon: 'fa-solid fa-bullhorn' },
+  { name: 'PortalAnnouncements', label: 'Avisos', icon: 'fa-solid fa-bell' },
 ]
 
 const route = useRoute()
@@ -62,6 +66,9 @@ const portal = usePortalStore()
 const slug = computed(() => route.params.slug)
 const company = computed(() => portal.me?.company)
 const customer = computed(() => portal.me?.customer)
+
+// Notification bell: unread count over the Avisos icon.
+const unseen = (item) => (item.name === 'PortalAnnouncements' ? portal.unseenAnnouncements : 0)
 
 const isActive = (item) => item.name === route.name || item.also?.includes(route.name)
 
@@ -81,7 +88,9 @@ const logout = async () => {
 // The company's color and name, like the CRM (Configurações › Aparência).
 onMounted(async () => {
   const me = await portal.loadMe()
-  if (me) applyAppearance({ primary_color: me.company.primary_color, brand_name: me.company.name })
+  if (!me) return
+  applyAppearance({ primary_color: me.company.primary_color, brand_name: me.company.name })
+  if (route.name !== 'PortalAnnouncements') portal.checkAnnouncements()
 })
 onUnmounted(resetAppearance)
 </script>
@@ -172,6 +181,7 @@ onUnmounted(resetAppearance)
 }
 
 .portal-nav__item {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -251,6 +261,59 @@ onUnmounted(resetAppearance)
   padding: 20px 16px 32px;
 }
 
+// Notification bell: the count sits on the icon's top-right corner and the bell rings once.
+.portal-nav__icon {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+
+  &.is-ringing i::before {
+    display: inline-block;
+    animation: bell-ring 0.9s ease 0.3s;
+    transform-origin: 50% 0;
+  }
+}
+
+@keyframes bell-ring {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+
+  20%,
+  60% {
+    transform: rotate(14deg);
+  }
+
+  40%,
+  80% {
+    transform: rotate(-14deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-nav__icon.is-ringing i::before {
+    animation: none;
+  }
+}
+
+.portal-nav__badge {
+  position: absolute;
+  top: -6px;
+  left: calc(50% + 4px);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border: 2px solid var(--color-bg-card);
+  border-radius: 999px;
+  background: var(--color-danger);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}
+
 @media (min-width: 768px) {
   .portal {
     padding-bottom: 0;
@@ -288,6 +351,15 @@ onUnmounted(resetAppearance)
     &.is-active {
       background: var(--color-primary-soft);
     }
+  }
+
+  // Smaller inline icon: lift the count and keep it off the label.
+  .portal-nav__icon.is-ringing {
+    margin-right: 8px;
+  }
+
+  .portal-nav__badge {
+    top: -9px;
   }
 
   .portal-exit > i {

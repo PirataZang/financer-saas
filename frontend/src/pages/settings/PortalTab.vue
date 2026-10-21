@@ -10,16 +10,7 @@
       Envie este link aos seus clientes. Eles entram com o e-mail do cadastro (Clientes) e um código que chega por e-mail, e
       acompanham os projetos, as contas (receitas pendentes vinculadas a eles) e os avisos. Ninguém altera nada pelo portal.
     </p>
-    <div class="portal-link">
-      <code>{{ link }}</code>
-      <Button
-        variant="secondary"
-        :icon="copied ? 'fa-solid fa-check' : 'fa-regular fa-copy'"
-        :label="copied ? 'Copiado!' : 'Copiar link'"
-        @click="copy"
-      />
-      <Button type="link" :href="link" target="_blank" rel="noopener" variant="ghost" icon="fa-solid fa-arrow-up-right-from-square" label="Abrir" />
-    </div>
+    <PortalLinkField v-if="slug" :slug="slug" :company-name="companyName" class="portal-link-block" />
 
     <h3 class="form-section">Pagamento</h3>
     <div class="form-grid">
@@ -45,10 +36,10 @@ import { computed, onMounted, ref } from 'vue'
 import { apiFetch } from '@/services/api'
 import { swal } from '@/plugins/swal'
 import { useAuthStore } from '@/stores/auth'
-import Button from '@/components/utils/Button.vue'
 import Input from '@/components/utils/Input.vue'
 import TextArea from '@/components/utils/TextArea.vue'
 import FormActions from '@/components/ui/FormActions.vue'
+import PortalLinkField from '@/components/portal/PortalLinkField.vue'
 
 const auth = useAuthStore()
 const form = ref({ pix_key: '', payment_instructions: '' })
@@ -56,15 +47,7 @@ const slug = ref('')
 const loading = ref(true)
 const saving = ref(false)
 const error = ref('')
-const copied = ref(false)
-
-const link = computed(() => `${window.location.origin}/portal/${slug.value}/entrar`)
-
-const copy = async () => {
-  await navigator.clipboard.writeText(link.value)
-  copied.value = true
-  setTimeout(() => (copied.value = false), 1600)
-}
+const companyName = computed(() => auth.user?.company?.trade_name || auth.user?.company?.name || '')
 
 const load = async () => {
   loading.value = true
@@ -106,27 +89,11 @@ onMounted(load)
   margin: 0 0 12px;
 }
 
-.portal-link {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
+.portal-link-block {
   margin-bottom: 24px;
 }
 
-.portal-link code {
-  flex: 1 1 280px;
-  min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-muted);
-  color: var(--color-text);
-  font-size: 0.85rem;
-  overflow-wrap: anywhere;
-}
-
-.portal-link + .form-section {
+.portal-link-block + .form-section {
   padding-top: 20px;
   border-top: 1px solid var(--color-border);
 }

@@ -7,6 +7,10 @@
   <form v-else @submit.prevent="save">
     <CompanyFields ref="fields" v-model="form" />
 
+    <h3 class="form-section portal-section">Portal do cliente</h3>
+    <p class="field-hint portal-hint">Envie este link aos seus clientes para acompanharem projetos, contas e avisos.</p>
+    <PortalLinkField v-if="portalSlug" :slug="portalSlug" :company-name="form.trade_name || form.name" />
+
     <p class="field-hint license-note">
       <i class="fa-solid fa-lock" aria-hidden="true" />
       Licença e token de acesso são gerenciados pelo suporte.
@@ -25,6 +29,7 @@ import { swal } from '@/plugins/swal'
 import { useAuthStore } from '@/stores/auth'
 import CompanyFields from '@/components/company/CompanyFields.vue'
 import FormActions from '@/components/ui/FormActions.vue'
+import PortalLinkField from '@/components/portal/PortalLinkField.vue'
 
 const FIELDS = ['name', 'trade_name', 'document', 'description', 'zip_code', 'street', 'number', 'neighborhood', 'city', 'state', 'country']
 
@@ -34,9 +39,11 @@ const fields = ref(null)
 const loading = ref(true)
 const saving = ref(false)
 const error = ref('')
+const portalSlug = ref('')
 
 const apply = (data) => {
   FIELDS.forEach((key) => (form.value[key] = data[key] ?? ''))
+  portalSlug.value = data.portal_slug || portalSlug.value
 }
 
 const load = async () => {
@@ -76,6 +83,17 @@ onMounted(load)
 </script>
 
 <style scoped>
+/* Same divider as .form-grid + .form-section: the previous grid lives inside CompanyFields. */
+.portal-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.portal-hint {
+  margin: 0 0 12px;
+}
+
 .license-note {
   display: flex;
   align-items: center;

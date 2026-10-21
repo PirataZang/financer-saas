@@ -43,6 +43,7 @@ Como escrever:
 - **Avisos** (menu Portal do cliente): comunicados para todos os clientes ou para o cliente de um projeto.
 - **Cliente na receita**: vincular uma receita a um cliente faz ela aparecer no portal dele como conta.
 - **Configurações › Portal do cliente**: link do portal para enviar aos clientes, chave PIX e instruções de pagamento.
+- **Link do portal em Configurações › Empresa**: copiar, enviar por WhatsApp ou e-mail com uma mensagem pronta, ou abrir.
 
 ### Fixed
 

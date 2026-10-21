@@ -26,10 +26,14 @@
           <Button
             variant="primary"
             block
+            class="pix-copy"
+            :class="{ 'is-copied': copied }"
             :icon="copied ? 'fa-solid fa-check' : 'fa-regular fa-copy'"
-            :label="copied ? 'Chave copiada!' : 'Copiar chave PIX'"
+            :label="copied ? '' : 'Copiar chave PIX'"
+            :aria-label="copied ? 'Chave PIX copiada' : undefined"
             @click="copyPix"
           />
+          <span class="sr-only" aria-live="polite">{{ copied ? 'Chave PIX copiada' : '' }}</span>
         </div>
         <p v-if="payment.payment_instructions" class="pay__instructions">{{ payment.payment_instructions }}</p>
         <p v-if="!payment.pix_key && !payment.payment_instructions" class="pay__instructions">
@@ -103,10 +107,12 @@ const badge = (bill) => {
   return { label: 'Em aberto', color: 'warning', icon: 'fa-regular fa-clock' }
 }
 
+let copiedTimer
 const copyPix = async () => {
   await navigator.clipboard.writeText(payment.value.pix_key)
   copied.value = true
-  setTimeout(() => (copied.value = false), 1800)
+  clearTimeout(copiedTimer)
+  copiedTimer = setTimeout(() => (copied.value = false), 5000)
 }
 
 onMounted(async () => {
@@ -163,6 +169,57 @@ onMounted(async () => {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.95rem;
     overflow-wrap: anywhere;
+  }
+}
+
+// Copied: the sides close in first, then the corners round into a green circle and the check pops;
+// after copiedTimer it runs backwards (corners, then width).
+.pix-copy {
+  margin-inline: auto;
+  overflow: hidden;
+  transition:
+    border-radius 0.2s ease,
+    background 0.2s ease,
+    width 0.3s ease 0.2s;
+
+  &.is-copied {
+    --btn-bg: var(--color-success);
+    --btn-bg-hover: var(--color-success);
+
+    width: 40px;
+    padding: 0;
+    border-radius: 20px;
+    pointer-events: none;
+    transition:
+      width 0.3s ease,
+      border-radius 0.2s ease 0.3s,
+      background 0.2s ease 0.3s;
+
+    :deep(i) {
+      animation: pix-check 0.3s ease 0.45s both;
+    }
+  }
+}
+
+@keyframes pix-check {
+  from {
+    transform: scale(0);
+  }
+
+  70% {
+    transform: scale(1.25);
+  }
+
+  to {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pix-copy,
+  .pix-copy.is-copied :deep(i) {
+    transition: none;
+    animation: none;
   }
 }
 

@@ -16,6 +16,8 @@ export const usePortalStore = defineStore('portal', {
     slug: null,
     // /portal/me: { customer: { name, email }, company: { name, slug, primary_color, payment } }
     me: null,
+    // Announcements newer than the last visit to Avisos (per customer, on this device) → red badge on the tab.
+    unseenAnnouncements: 0,
   }),
 
   getters: {
@@ -54,12 +56,26 @@ export const usePortalStore = defineStore('portal', {
       return this.me
     },
 
+    async checkAnnouncements() {
+      const response = await portalFetch('/portal/announcements')
+      if (!response.ok) return
+      const seenAt = Date.parse(localStorage.getItem(seenKey(this.me)) || 0)
+      this.unseenAnnouncements = (await response.json()).filter((a) => Date.parse(a.created_at) > seenAt).length
+    },
+
+    // ponytail: "seen" lives in this device's localStorage; move to the server if customers switch devices a lot.
+    markAnnouncementsSeen(announcements) {
+      if (announcements.length) localStorage.setItem(seenKey(this.me), announcements[0].created_at)
+      this.unseenAnnouncements = 0
+    },
+
     async logout({ remote = true } = {}) {
       const slug = this.slug
       if (remote && this.token) {
         await fetch(`${API_URL}/portal/logout`, { method: 'POST', headers: { Accept: 'application/json', Authorization: `Bearer ${this.token}` } }).catch(() => {})
       }
       this.token = this.expireAt = this.slug = this.me = null
+      this.unseenAnnouncements = 0
       Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key))
 
       const { default: router } = await import('@/router')
@@ -67,6 +83,8 @@ export const usePortalStore = defineStore('portal', {
     },
   },
 })
+
+const seenKey = (me) => `financial_botportal_seen_announcements_${me?.customer?.id}`
 
 // Public portal calls (before a session exists): first validation message, else the API message.
 async function post(url, body) {

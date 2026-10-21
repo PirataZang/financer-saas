@@ -1,0 +1,71 @@
+{
+  "branch": "main",
+  "created_at": "2026-10-21T00:56:25.676Z",
+  "author": {
+    "name": "Igor Fronza",
+    "email": "igorfronza20@gmail.com"
+  },
+  "parent": "09e5b26871aa7755d30c829cccd123ce9d1629b6",
+  "notes": null,
+  "stats": {
+    "files": 9,
+    "additions": 256,
+    "deletions": 44
+  },
+  "files": [
+    {
+      "status": "M",
+      "path": "CHANGELOG.md",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Http/Controllers/SettingsController.php",
+      "additions": 4,
+      "deletions": 1
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/portal/PortalLinkField.vue",
+      "additions": 73,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/layouts/PortalLayout.vue",
+      "additions": 75,
+      "deletions": 3
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/portal/PortalAnnouncements.vue",
+      "additions": 3,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/portal/PortalBills.vue",
+      "additions": 59,
+      "deletions": 2
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/settings/CompanyTab.vue",
+      "additions": 18,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/settings/PortalTab.vue",
+      "additions": 5,
+      "deletions": 38
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/stores/portal.js",
+      "additions": 18,
+      "deletions": 0
+    }
+  ]
+}

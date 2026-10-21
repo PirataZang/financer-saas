@@ -24,7 +24,10 @@ class SettingsController extends Controller
     #[Permission('settings.company')]
     public function company(): JsonResponse
     {
-        return response()->json($this->settingsService->company());
+        $company = $this->settingsService->company();
+        $company->portalSlug(); // created on first read, so the Empresa tab can show the portal link
+
+        return response()->json($company);
     }
 
     #[Permission('settings.company')]

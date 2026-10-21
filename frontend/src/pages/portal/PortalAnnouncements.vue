@@ -27,8 +27,10 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { portalFetch } from '@/services/api'
+import { usePortalStore } from '@/stores/portal'
 import AnnouncementCard from '@/components/portal/AnnouncementCard.vue'
 
+const portal = usePortalStore()
 const loading = ref(true)
 const error = ref('')
 const announcements = ref([])
@@ -38,6 +40,7 @@ onMounted(async () => {
     const response = await portalFetch('/portal/announcements')
     if (!response.ok) throw new Error('Não foi possível carregar os avisos. Tente novamente.')
     announcements.value = await response.json()
+    portal.markAnnouncementsSeen(announcements.value)
   } catch (err) {
     error.value = err.message
   } finally {
