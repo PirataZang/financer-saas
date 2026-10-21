@@ -1,0 +1,48 @@
+{
+  "branch": "main",
+  "created_at": "2026-10-21T00:57:38.484Z",
+  "author": {
+    "name": "Igor Fronza",
+    "email": "igorfronza20@gmail.com"
+  },
+  "parent": "cfeda1f1c2a8ad1f6223462cc7fc5f5de145a714",
+  "merging": "3dc85579cbef4d28cbb5d0913bd74fec0ce4b058",
+  "notes": null,
+  "stats": {
+    "files": 5,
+    "additions": 1855,
+    "deletions": 128
+  },
+  "files": [
+    {
+      "status": "M",
+      "path": "frontend/package-lock.json",
+      "additions": 1846,
+      "deletions": 125
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/portal/PortalLinkField.vue",
+      "additions": 4,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/router/index.js",
+      "additions": 1,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/stores/auth.js",
+      "additions": 2,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "frontend/vite.config.js",
+      "additions": 2,
+      "deletions": 0
+    }
+  ]
+}

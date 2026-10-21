@@ -17,6 +17,7 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import Button from '@/components/utils/Button.vue'
 
 // Address of the company's portal (/portal/<slug>/entrar) with ways to hand it to a customer.
@@ -25,9 +26,11 @@ const props = defineProps({
   companyName: { type: String, default: '' },
 })
 
+const router = useRouter()
 const copied = ref(false)
 
-const link = computed(() => `${window.location.origin}/portal/${props.slug}/entrar`)
+// router.resolve adds the build's base (/financial-bot/ behind Nginx), so the link opens the app.
+const link = computed(() => window.location.origin + router.resolve({ name: 'PortalLogin', params: { slug: props.slug } }).href)
 const message = computed(
   () =>
     `Olá! Acompanhe seus projetos, contas e avisos${props.companyName ? ` da ${props.companyName}` : ''} pelo portal do cliente: ${link.value}\n` +
