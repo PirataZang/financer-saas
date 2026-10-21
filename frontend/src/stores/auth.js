@@ -129,7 +129,8 @@ export const useAuthStore = defineStore('auth', {
       sessionStorage.clear()
       localStorage.setItem(STORAGE_KEYS.companyId, String(companyId))
 
-      window.location.assign('/')
+      // BASE_URL keeps the reload inside the app's prefix (/financial-bot/ behind Nginx).
+      window.location.assign(import.meta.env.BASE_URL)
     },
 
     async login(email, password) {

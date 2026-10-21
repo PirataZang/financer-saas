@@ -42,6 +42,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { apiFetch } from '@/services/api'
 import { swal } from '@/plugins/swal'
 import { useAuthStore } from '@/stores/auth'
@@ -51,6 +52,7 @@ import TextArea from '@/components/utils/TextArea.vue'
 import FormActions from '@/components/ui/FormActions.vue'
 
 const auth = useAuthStore()
+const router = useRouter()
 const form = ref({ pix_key: '', payment_instructions: '' })
 const slug = ref('')
 const loading = ref(true)
@@ -58,7 +60,9 @@ const saving = ref(false)
 const error = ref('')
 const copied = ref(false)
 
-const link = computed(() => `${window.location.origin}/portal/${slug.value}/entrar`)
+// router.resolve adds the build's base (/financial-bot/ behind Nginx), so the link opens the app.
+const link = computed(() =>
+  slug.value ? window.location.origin + router.resolve({ name: 'PortalLogin', params: { slug: slug.value } }).href : '')
 
 const copy = async () => {
   await navigator.clipboard.writeText(link.value)
