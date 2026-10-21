@@ -63,6 +63,10 @@ return [
             'transaction.create' => 'Cadastrar transações',
             'transaction.update' => 'Editar transações',
             'transaction.delete' => 'Excluir transações',
+            'goal.view' => 'Visualizar metas',
+            'goal.create' => 'Cadastrar metas',
+            'goal.update' => 'Editar metas',
+            'goal.delete' => 'Excluir metas',
         ],
     ],
     'settings' => [

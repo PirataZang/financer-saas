@@ -56,7 +56,8 @@
         <EChart v-if="chart.option" :option="chart.option" :height="chart.height" />
         <p v-else class="chart-empty" :style="{ height: chart.height }">
           <i class="fa-regular fa-folder-open" aria-hidden="true" />
-          Nenhuma transação {{ STATUS_LABEL[filters.status] }} neste período{{ hasExtraFilters ? ' com esses filtros' : '' }}.
+          <template v-if="chart.empty">{{ chart.empty }}</template>
+          <template v-else>Nenhuma transação {{ STATUS_LABEL[filters.status] }} neste período{{ hasExtraFilters ? ' com esses filtros' : '' }}.</template>
         </p>
       </section>
     </div>
@@ -87,12 +88,14 @@ const STATUS_OPTIONS = [
 const STATUS_LABEL = { paid: 'efetivada', pending: 'pendente', all: '' }
 const DEFAULT_FILTERS = () => ({ category_ids: [], source: '', status: 'paid' })
 
+const auth = useAuthStore()
 // Configurações › Financeiro "período inicial".
-const period = ref(useAuthStore().settings.finance.default_period || 'month')
+const period = ref(auth.settings.finance.default_period || 'month')
 const range = ref(periodRange(period.value))
 const filters = ref(DEFAULT_FILTERS())
 const sourceOptions = ref([])
 const summary = ref(null)
+const goals = ref([])
 const loading = ref(false)
 const exporting = ref(false)
 const error = ref('')
@@ -131,9 +134,12 @@ const kpis = computed(() => {
   ]
 })
 
-const renderedCharts = computed(() =>
-  charts.map((chart) => ({ ...chart, option: chart.option(summary.value), height: chart.height?.(summary.value) ?? '280px' })),
-)
+const renderedCharts = computed(() => {
+  const data = { ...summary.value, goals: goals.value }
+  return charts
+    .filter((chart) => !chart.permission || auth.can(chart.permission))
+    .map((chart) => ({ ...chart, option: chart.option(data), height: chart.height?.(data) ?? '280px' }))
+})
 
 // One query string for the dashboard and the export, so the spreadsheet is exactly what's on screen.
 const query = () => {
@@ -193,10 +199,17 @@ const exportExcel = async () => {
   }
 }
 
+// Goals have their own periods: loaded once, the dashboard filters don't apply to them.
+const fetchGoals = async () => {
+  if (!auth.can('finance.goal.view')) return
+  const response = await apiFetch('/finance/goals')
+  if (response.ok) goals.value = await response.json()
+}
+
 onMounted(async () => {
   const response = await apiFetch('/finance/transactions/options')
   if (response.ok) sourceOptions.value = (await response.json()).sources
-  await fetchSummary()
+  await Promise.all([fetchSummary(), fetchGoals()])
 })
 </script>
 
@@ -280,7 +293,7 @@ onMounted(async () => {
 
 .chart-grid {
   display: grid;
-  /* Wide time charts span both columns; the category pair splits evenly. */
+  /* Charts pair up side by side; a wide one (Metas) spans both columns. */
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
   transition: opacity 0.18s ease;

@@ -18,36 +18,7 @@
           <Select class="col-3" v-model="form.type" label="Aceita" :options="typeOptions" />
           <Input class="col-3" v-model.number="form.sort_order" label="Ordem" type="number" min="0" max="9999" />
 
-          <div class="col-6">
-            <Input v-model="form.icon" label="Ícone (emoji)" placeholder="🛒" maxlength="16" />
-            <div class="swatches" role="group" aria-label="Sugestões de ícone">
-              <button
-                v-for="emoji in EMOJIS"
-                :key="emoji"
-                type="button"
-                class="swatch swatch--emoji"
-                :class="{ selected: form.icon === emoji }"
-                :aria-label="`Usar ${emoji}`"
-                @click="form.icon = emoji"
-              >{{ emoji }}</button>
-            </div>
-          </div>
-
-          <div class="col-6">
-            <Input v-model="form.color" label="Cor" type="color" />
-            <div class="swatches" role="group" aria-label="Sugestões de cor">
-              <button
-                v-for="color in COLORS"
-                :key="color"
-                type="button"
-                class="swatch swatch--color"
-                :class="{ selected: form.color === color }"
-                :style="{ background: color }"
-                :aria-label="`Usar a cor ${color}`"
-                @click="form.color = color"
-              />
-            </div>
-          </div>
+          <CategoryLookFields v-model:icon="form.icon" v-model:color="form.color" />
 
           <Switch class="col-3" v-model="form.active" label="Status" :text-label="form.active ? 'Ativa' : 'Inativa'" />
 
@@ -74,11 +45,8 @@ import Switch from '@/components/utils/Switch.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import FormActions from '@/components/ui/FormActions.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
+import CategoryLookFields from '@/components/finance/CategoryLookFields.vue'
 import { apiFetch } from '@/services/api'
-
-// Shortcuts only — any emoji / color can be typed or picked.
-const EMOJIS = ['💼', '📈', '🛒', '🍔', '🏠', '🧾', '🚗', '🎮', '🩺', '📚', '📦', '💡', '📱', '✈️', '🎁', '🐶', '👕', '💳', '🏦', '💰']
-const COLORS = ['#059669', '#0891b2', '#2563eb', '#4f46e5', '#9333ea', '#db2777', '#d97706', '#ea580c', '#65a30d', '#0d9488', '#64748b']
 
 const router = useRouter()
 const route = useRoute()

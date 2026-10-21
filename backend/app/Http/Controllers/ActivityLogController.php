@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Company;
 use App\Models\Customer;
+use App\Models\Goal;
 use App\Models\Project;
 use App\Models\Transaction;
 use App\Models\User;
@@ -25,6 +26,7 @@ class ActivityLogController extends Controller
         'project' => [Project::class, 'projects.view'],
         'category' => [Category::class, 'finance.category.view'],
         'transaction' => [Transaction::class, 'finance.transaction.view'],
+        'goal' => [Goal::class, 'finance.goal.view'],
         'company' => [Company::class, 'master'],
     ];
 

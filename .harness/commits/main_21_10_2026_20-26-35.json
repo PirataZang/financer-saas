@@ -1,0 +1,161 @@
+{
+  "branch": "main",
+  "created_at": "2026-10-21T23:26:35.585Z",
+  "author": {
+    "name": "Igor Fronza",
+    "email": "igorfronza20@gmail.com"
+  },
+  "parent": "e5215f839a01ed635f12c377d0b1950054e6361f",
+  "notes": null,
+  "stats": {
+    "files": 24,
+    "additions": 1341,
+    "deletions": 50
+  },
+  "files": [
+    {
+      "status": "M",
+      "path": "CHANGELOG.md",
+      "additions": 6,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Enums/GoalStatus.php",
+      "additions": 42,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Enums/GoalType.php",
+      "additions": 50,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Http/Controllers/ActivityLogController.php",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/GoalController.php",
+      "additions": 66,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Models/Category.php",
+      "additions": 7,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Models/Goal.php",
+      "additions": 37,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/CategoryService.php",
+      "additions": 17,
+      "deletions": 1
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/GoalService.php",
+      "additions": 140,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/config/permissions.php",
+      "additions": 4,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/database/migrations/0001_01_01_000010_create_finance_goals_table.php",
+      "additions": 39,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/routes/api.php",
+      "additions": 10,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Feature/GoalTest.php",
+      "additions": 140,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "design.md",
+      "additions": 11,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/finance/CategoryLookFields.vue",
+      "additions": 45,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/finance/CategoryForm.vue",
+      "additions": 2,
+      "deletions": 34
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/finance/CategoryList.vue",
+      "additions": 3,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/finance/FinanceDashboard.vue",
+      "additions": 20,
+      "deletions": 7
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/finance/GoalForm.vue",
+      "additions": 149,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/finance/GoalList.vue",
+      "additions": 438,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/finance/TransactionForm.vue",
+      "additions": 13,
+      "deletions": 4
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/finance/dashboardCharts.js",
+      "additions": 56,
+      "deletions": 4
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/router/index.js",
+      "additions": 43,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/styles/main.scss",
+      "additions": 1,
+      "deletions": 0
+    }
+  ]
+}

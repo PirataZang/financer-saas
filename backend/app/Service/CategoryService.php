@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Company;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class CategoryService
 {
@@ -19,6 +20,7 @@ class CategoryService
     {
         return Category::query()
             ->withCount('transactions')
+            ->with('goal:id,category_id,type')
             ->when($filters['search'] ?? null, fn ($q, $search) => $q->whereLike('name', "%{$search}%"))
             ->when($filters['type'] ?? null, fn ($q, $type) => $q->where('type', $type))
             ->when(isset($filters['active']), fn ($q) => $q->where('active', (bool) $filters['active']))
@@ -61,6 +63,9 @@ class CategoryService
     public function update(int $id, array $data): Category
     {
         $category = Category::findOrFail($id);
+        if (isset($data['type']) && $data['type'] !== $category->type->value) {
+            $this->guardGoal($category);
+        }
         $category->update($data);
 
         return $category;
@@ -71,7 +76,18 @@ class CategoryService
      */
     public function delete(int $id): bool
     {
-        return Category::findOrFail($id)->delete();
+        $category = Category::findOrFail($id);
+        $this->guardGoal($category);
+
+        return $category->delete();
+    }
+
+    /** A meta's category follows the meta: its type and deletion only change on the Metas screen. */
+    private function guardGoal(Category $category): void
+    {
+        if ($category->goal()->exists()) {
+            throw ValidationException::withMessages(['category' => ['Esta categoria pertence a uma meta: altere o tipo ou exclua pela tela de Metas.']]);
+        }
     }
 
     public function rules(bool $partial = false, ?int $ignoreId = null): array

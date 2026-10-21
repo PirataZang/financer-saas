@@ -2,8 +2,9 @@ import { formatMoney } from '@/utils/money'
 
 // Finance dashboard charts. Each entry turns the /finance/dashboard payload into an ECharts
 // option (or null = "sem dados"). New chart = new entry here; FinanceDashboard.vue renders the list.
-//   { key, title, wide?, height?(summary), option(summary) }
-// One question per chart: flow over time, balance over time, where money comes from, where it goes.
+//   { key, title, wide?, permission?, empty?, height?(summary), option(summary) }
+// One question per chart: flow over time, balance over time, where money comes from, where it goes,
+// how the goals are doing. `summary.goals` is GET /finance/goals (own periods, ignores the filters).
 
 const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 
@@ -17,6 +18,8 @@ const colors = () => ({
   grid: cssVar('--color-border'),
   text: cssVar('--color-text'),
   surface: cssVar('--color-bg-card'),
+  warning: cssVar('--color-warning'),
+  danger: cssVar('--color-danger'),
 })
 
 const expenseTexture = { symbol: 'rect', symbolSize: 1, dashArrayX: [1, 0], dashArrayY: [2, 4], rotation: -Math.PI / 4, color: 'rgba(255,255,255,0.45)' }
@@ -85,11 +88,52 @@ const categoryBars = (list) => {
 // Ranked bars need room per category; the time charts keep the default height.
 const categoryHeight = (list) => `${Math.max(140, Math.min(list.length, 12) * 40 + 32)}px`
 
+const percent = (v) => `${v.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
+
+// % of each goal's target, dashed line at 100%. A ceiling uses the same tones as the Metas screen.
+const goalBars = (goals) => {
+  if (!goals?.length) return null
+  const c = colors()
+  const tone = (g) => {
+    if (g.type !== 'spending') return g.category.color
+    return g.progress.percent > 100 ? c.danger : g.progress.percent >= 80 ? c.warning : c.income
+  }
+  const list = goals.slice(0, 12).reverse()
+  const label = (d) => `${percent(d.value)} · ${formatMoney(d.current)} de ${formatMoney(d.target)}${d.ceiling ? ' (teto)' : ''}`
+  return {
+    grid: { left: 8, right: 210, top: 8, bottom: 8, containLabel: true },
+    tooltip: { trigger: 'item', formatter: (p) => `${p.name}<br/><b>${label(p.data)}</b>` },
+    xAxis: { type: 'value', show: false, max: (v) => Math.max(100, v.max) },
+    yAxis: {
+      type: 'category',
+      data: list.map((g) => `${g.category.icon ?? ''} ${g.category.name}`.trim()),
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { color: c.text },
+    },
+    series: [{
+      type: 'bar',
+      data: list.map((g) => ({
+        value: g.progress.percent,
+        current: g.progress.current,
+        target: Number(g.target_amount),
+        ceiling: g.type === 'spending',
+        itemStyle: { color: tone(g) },
+      })),
+      barMaxWidth: 18,
+      showBackground: true,
+      backgroundStyle: { color: c.grid, borderRadius: [0, 4, 4, 0] },
+      itemStyle: { borderRadius: [0, 4, 4, 0] },
+      label: { show: true, position: 'right', color: c.text, formatter: (p) => label(p.data) },
+      markLine: { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: c.axis, type: 'dashed' }, data: [{ xAxis: 100 }] },
+    }],
+  }
+}
+
 export const charts = [
   {
     key: 'flow',
     title: 'Receitas x despesas',
-    wide: true,
     option: (s) => {
       if (!s.timeline.some((p) => p.income || p.expense)) return null
       const c = colors()
@@ -107,7 +151,6 @@ export const charts = [
   {
     key: 'balance',
     title: 'Evolução do saldo',
-    wide: true,
     option: (s) => {
       const c = colors()
       return {
@@ -129,4 +172,13 @@ export const charts = [
   },
   { key: 'expense-categories', title: 'Despesas por categoria', height: (s) => categoryHeight(s.categories.expense), option: (s) => categoryBars(s.categories.expense) },
   { key: 'income-categories', title: 'Receitas por categoria', height: (s) => categoryHeight(s.categories.income), option: (s) => categoryBars(s.categories.income) },
+  {
+    key: 'goals',
+    title: 'Metas',
+    wide: true,
+    permission: 'finance.goal.view',
+    empty: 'Nenhuma meta cadastrada. Crie uma em Financeiro › Metas.',
+    height: (s) => categoryHeight(s.goals ?? []),
+    option: (s) => goalBars(s.goals),
+  },
 ]

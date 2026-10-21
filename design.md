@@ -299,6 +299,17 @@ todos por `TransactionService::create($data, TransactionSource, ?externalId)`.
 - **TransactionForm**: "Salvar e lançar outra" mantém tipo, data, categoria e status e limpa valor/descrição
   (foco volta no valor). Na inclusão, "Repetição" (não repete / parcelado / todo mês) com prévia do valor
   das parcelas.
+- **Metas** (`finance_goals`, `Goal`, `GoalService`, `pages/finance/GoalList|GoalForm`, permissões `finance.goal.*`):
+  a meta **cria e é dona de uma categoria** (nome/emoji/cor ficam nela; `Category::goal()`), e os lançamentos dessa
+  categoria com data em `[start_date, end_date]` são o dinheiro separado da meta. Progresso = despesas − receitas
+  (`current` = efetivadas, `pending` = pendentes). `GoalType`: **Investimento** (`saving`, categoria `both`: aporte =
+  despesa, sai do saldo do dashboard; resgate = receita; atinge com `current ≥ alvo`, não atinge se o prazo passar
+  antes) e **Teto de gastos** (`spending`, categoria `expense`: estoura com `current > teto`, atinge se o prazo passar
+  dentro dele). `GoalStatus` é calculado (nunca gravado), com o "hoje" no fuso da empresa. Excluir a meta exclui a
+  categoria (soft); a categoria de uma meta não muda de tipo nem é excluída por Categorias. Os botões
+  Aportar/Resgatar/Lançar gasto abrem o `TransactionForm` com `?type=&category_id=`.
+- **Dashboard**: os gráficos ficam lado a lado (2 colunas); o card **Metas** (largo, `permission` na entrada do
+  `dashboardCharts.js`) mostra o % de cada meta e ignora os filtros do dashboard (cada meta tem o próprio período).
 
 ## 12. Bot do Telegram (`bot/`)
 

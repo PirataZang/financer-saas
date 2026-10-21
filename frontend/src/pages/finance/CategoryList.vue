@@ -52,6 +52,7 @@
             <strong class="category-card__name" :title="category.name">{{ category.name }}</strong>
             <div class="category-card__meta">
               <StatusBadge v-bind="typeBadge(category.type)" small />
+              <StatusBadge v-if="category.goal" label="Meta" color="info" icon="fa-solid fa-bullseye" small />
               <span>{{ category.transactions_count }} {{ category.transactions_count === 1 ? 'transação' : 'transações' }}</span>
             </div>
           </div>
@@ -85,7 +86,9 @@
             title="Histórico"
             @click="historyId = category.id"
           />
+          <!-- A meta's category is deleted with the meta (Metas screen). -->
           <Button
+            v-if="!category.goal"
             v-can="'finance.category.delete'"
             variant="ghost"
             size="sm"

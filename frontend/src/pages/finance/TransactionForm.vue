@@ -104,8 +104,17 @@ const saving = ref(false)
 const error = ref('')
 const source = ref('')
 const options = ref({ types: [], statuses: [], sources: [] })
-// New entries start with the company's default status (Configurações › Financeiro).
-const form = ref({ type: 'expense', amount: '', date: toDateString(new Date()), status: auth.settings.finance.default_status || 'paid', description: '', category_id: '', customer_id: '' })
+// New entries start with the company's default status (Configurações › Financeiro); Metas' "Aportar"/"Resgatar"
+// open it with ?type=&category_id= already picked.
+const form = ref({
+  type: route.query.type === 'income' ? 'income' : 'expense',
+  amount: '',
+  date: toDateString(new Date()),
+  status: auth.settings.finance.default_status || 'paid',
+  description: '',
+  category_id: Number(route.query.category_id) || '',
+  customer_id: '',
+})
 const repeat = ref({ mode: 'none', count: 2 })
 // Set by "Salvar e lançar outra" right before the form submits (Enter / "Salvar" leave it false).
 let another = false
@@ -137,9 +146,9 @@ const onTypeChange = () => {
   if (form.value.type !== 'income') form.value.customer_id = ''
 }
 
-// The list keeps its filters in its URL: going back restores them; opened directly, push the plain list.
+// The list keeps its filters in its URL: going back restores them (Metas too); opened directly, push the plain list.
 const backToList = () => {
-  if (/^\/finance\/transactions(\?|$)/.test(window.history.state?.back ?? '')) router.back()
+  if (/^\/finance\/(transactions|goals)(\?|$)/.test(window.history.state?.back ?? '')) router.back()
   else router.push('/finance/transactions')
 }
 

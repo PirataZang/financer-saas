@@ -35,6 +35,12 @@ Como escrever:
 
 ### Added
 
+- **Metas**: nova tela em Financeiro › Metas para acompanhar metas de **investimento** (juntar um valor até um prazo)
+  e **tetos de gastos** (não passar de um valor no período). Cada meta cria a própria categoria: o que for lançado
+  nela é o dinheiro separado da meta, com progresso, quanto falta, prazo, quanto guardar por mês e se a meta foi
+  atingida. Botões para aportar, resgatar ou lançar um gasto direto na meta.
+- **Dashboard financeiro**: novo card com o progresso das metas; os gráficos agora ficam lado a lado.
+
 - **Portal do cliente**: novo acesso para os clientes da empresa, pensado para o celular. O cliente entra com o
   e-mail do cadastro e um código enviado por e-mail e acompanha seus projetos (etapas e progresso), suas contas
   (em aberto, vencidas e pagas, com a chave PIX para copiar) e os avisos da empresa. Só leitura.

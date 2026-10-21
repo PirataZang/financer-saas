@@ -8,6 +8,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GoalController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\Portal\PortalController;
 use App\Http\Controllers\ProjectController;
@@ -128,6 +129,15 @@ Route::middleware(['auth', 'company', 'permission'])->group(function () {
             Route::patch('/status', [TransactionController::class, 'status']);
             Route::put('/{id}', [TransactionController::class, 'update']);
             Route::delete('/{id}', [TransactionController::class, 'delete']);
+        });
+
+        Route::prefix('goals')->group(function () {
+            Route::get('/', [GoalController::class, 'list']);
+            Route::get('/options', [GoalController::class, 'options']);
+            Route::get('/{id}', [GoalController::class, 'index']);
+            Route::post('/', [GoalController::class, 'create']);
+            Route::put('/{id}', [GoalController::class, 'update']);
+            Route::delete('/{id}', [GoalController::class, 'delete']);
         });
     });
 

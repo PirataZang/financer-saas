@@ -16,6 +16,8 @@ import CategoryList from '@/pages/finance/CategoryList.vue'
 import CategoryForm from '@/pages/finance/CategoryForm.vue'
 import TransactionList from '@/pages/finance/TransactionList.vue'
 import TransactionForm from '@/pages/finance/TransactionForm.vue'
+import GoalList from '@/pages/finance/GoalList.vue'
+import GoalForm from '@/pages/finance/GoalForm.vue'
 import CompanyList from '@/pages/company/CompanyList.vue'
 import CompanyForm from '@/pages/company/CompanyForm.vue'
 import Settings from '@/pages/settings/Settings.vue'
@@ -312,6 +314,47 @@ const routes = [
         component: TransactionForm,
         props: true,
         meta: { permission: 'finance.transaction.view' },
+      },
+      {
+        path: 'finance/goals',
+        name: 'GoalList',
+        component: GoalList,
+        meta: {
+          permission: 'finance.goal.view',
+          menu: {
+            label: 'Metas',
+            icon: 'fa-solid fa-bullseye',
+            description: 'Metas de investimento e tetos de gastos, com o dinheiro separado de cada uma',
+            keywords: ['financeiro', 'objetivos', 'investimento', 'reserva', 'teto', 'orçamento', 'limite'],
+            module: 'Financeiro',
+            group: 'finance',
+            order: 33.5,
+          },
+        },
+      },
+      {
+        path: 'finance/goals/form',
+        name: 'GoalCreate',
+        component: GoalForm,
+        meta: {
+          permission: 'finance.goal.create',
+          menu: {
+            label: 'Nova meta',
+            icon: 'fa-solid fa-bullseye',
+            description: 'Cadastrar uma meta de investimento ou teto de gastos',
+            keywords: ['cadastrar', 'incluir', 'financeiro', 'objetivo'],
+            module: 'Financeiro',
+            order: 36,
+            sidebar: false,
+          },
+        },
+      },
+      {
+        path: 'finance/goals/form/:id',
+        name: 'GoalEdit',
+        component: GoalForm,
+        props: true,
+        meta: { permission: 'finance.goal.update' },
       },
       {
         path: 'user',
