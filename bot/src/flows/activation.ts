@@ -36,12 +36,22 @@ export async function replyError(ctx: BotContext, error: unknown): Promise<void>
   await (view ? showCard(ctx, view, { note: message }) : ctx.reply(`⚠️ ${message}`)).catch(() => {})
 }
 
+/**
+ * The code prompt's force_reply keeps the "reply to…" box pinned on the client even after the code
+ * message is deleted. A throwaway message with remove_keyboard clears it.
+ */
+async function clearCodeInput(ctx: BotContext): Promise<void> {
+  const sent = await ctx.reply('✅', { reply_markup: { remove_keyboard: true } }).catch(() => undefined)
+  if (sent) await ctx.api.deleteMessage(sent.chat.id, sent.message_id).catch(() => {})
+}
+
 /** Typed code or the t.me link's start payload. Errors (invalid, revoked, other company) go to replyError. */
 export async function activateWith(ctx: BotContext, code: string): Promise<void> {
   const from = ctx.from!
   await backend.activate(from, code)
   log('activation.succeeded', { telegramUserId: from.id })
   resetSession(ctx)
+  await clearCodeInput(ctx)
   ctx.session.timezone = (await backend.me(from.id)).timezone
   const name = from.first_name ? `, ${escapeHtml(from.first_name)}` : ''
   await showCard(ctx, menuCard(undefined, `✅ <b>Acesso liberado${name}. Seja bem-vindo!</b>\n\nO que você gostaria de fazer?`))

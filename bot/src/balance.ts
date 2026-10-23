@@ -54,11 +54,13 @@ const percent = (part: number, whole: number) =>
 const plural = (n: number) => `${n} ${n === 1 ? 'lançamento' : 'lançamentos'}`
 
 function section(title: string, total: number, count: number, categories: CategoryTotal[]): string[] {
-  const lines = [`${title} — <b>${formatMoney(String(total))}</b> (${plural(count)})`]
-  for (const category of categories) {
+  const lines = [title, `Total: <b>${formatMoney(String(total))}</b> · ${plural(count)}`]
+  const sorted = [...categories].sort((a, b) => b.total - a.total)
+  sorted.forEach((category, i) => {
     const name = escape(`${category.icon ?? ''} ${category.name ?? 'Sem categoria'}`.trim())
-    lines.push(`   ${name}: ${formatMoney(String(category.total))} · ${percent(category.total, total)}`)
-  }
+    const branch = i === sorted.length - 1 ? '└' : '├'
+    lines.push(`${branch} ${name}: ${formatMoney(String(category.total))} (${percent(category.total, total)})`)
+  })
   return lines
 }
 
@@ -77,13 +79,15 @@ export function formatBalance(summary: Summary, periodLabel: string): string {
   const net = totals.balance
   return [
     ...header,
-    ...section('💰 <b>Receitas</b>', totals.income, counts.income, categories.income),
+    '━━━━ 💰 <b>CRÉDITOS</b> ━━━━',
+    ...section('Receitas por categoria', totals.income, counts.income, categories.income),
     '',
-    ...section('💸 <b>Despesas</b>', totals.expense, counts.expense, categories.expense),
+    '━━━━ 💸 <b>DÉBITOS</b> ━━━━',
+    ...section('Despesas por categoria', totals.expense, counts.expense, categories.expense),
     '',
-    '━━━━━━━━━━━━━━━━',
-    `Total arrecadado: <b>${formatMoney(String(totals.income))}</b>`,
-    `Total gasto: <b>${formatMoney(String(totals.expense))}</b>`,
+    '━━━━ 🧮 <b>RESUMO</b> ━━━━',
+    `Total de créditos: <b>${formatMoney(String(totals.income))}</b>`,
+    `Total de débitos: <b>${formatMoney(String(totals.expense))}</b>`,
     `Resultado líquido: <b>${formatMoney(String(net))}</b> ${net >= 0 ? '✅' : '🔻'}`,
     ...(summary.opening_balance ? [`Saldo anterior: ${formatMoney(String(summary.opening_balance))}`] : []),
     `Saldo acumulado: <b>${formatMoney(String(summary.closing_balance))}</b>`,

@@ -35,8 +35,10 @@ registerConsult(bot)
 registerMenuFallback(bot)
 // Only .message: the underlying fetch error embeds the request URL, which contains the bot token.
 bot.catch((error) => log('error', { message: error.message }))
-process.on('unhandledRejection', (error) => {
-  log('fatal', { message: error instanceof Error ? error.message : String(error) })
+// A stray rejection (e.g. a network blip in a fire-and-forget call) must not take the bot down.
+process.on('unhandledRejection', (error) => log('unhandled', { message: error instanceof Error ? error.message : String(error) }))
+process.on('uncaughtException', (error) => {
+  log('fatal', { message: error.message })
   process.exit(1)
 })
 
@@ -65,10 +67,26 @@ await Promise.all([
   ),
 ]).catch((error: Error) => log('profile.failed', { message: error.message }))
 
-for (const signal of ['SIGINT', 'SIGTERM'] as const) process.once(signal, () => void bot.stop().catch(() => {}))
-
 log('bot.started', { username: bot.botInfo.username })
-await bot.start().catch((error: Error) => {
-  log('fatal', { message: error.message })
-  process.exit(1)
-})
+
+// Long polling dies on transient network errors (Telegram/VPS hiccups, 409 during a redeploy).
+// Restart it with backoff instead of exiting; a run that lasted a while resets the backoff.
+let stopping = false
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(signal, () => {
+    stopping = true
+    void bot.stop().catch(() => {})
+  })
+}
+let delay = 1_000
+while (!stopping) {
+  const startedAt = Date.now()
+  try {
+    await bot.start({ drop_pending_updates: false })
+  } catch (error) {
+    log('polling.failed', { message: error instanceof Error ? error.message : String(error), retryInMs: delay })
+  }
+  if (stopping) break
+  delay = Date.now() - startedAt > 60_000 ? 1_000 : Math.min(delay * 2, 30_000)
+  await new Promise((resolve) => setTimeout(resolve, delay))
+}
