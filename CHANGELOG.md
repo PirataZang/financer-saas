@@ -37,8 +37,10 @@ Como escrever:
 
 - **Integração com o Mercado Pago** (Configurações › Integrações): cada empresa conecta a própria conta com o Access Token (guardado criptografado) e o
   financeiro passa a receber, a cada 30 minutos, vendas e recebimentos por Pix, cartão e boleto, tarifas e
-  estornos, compras e Pix/transferências enviados (via relatório Liberações), em categorias da integração. Somente leitura: o sistema não cobra, não estorna e não transfere.
+  estornos, compras e, se ligado em Editar, Pix/transferências enviados (via relatório Liberações; cada pedido gera um relatório na conta, por isso é opcional), em categorias da integração. Somente leitura: o sistema não cobra, não estorna e não transfere.
   Card com ativar/desativar, editar, sincronizar agora e remover (apaga tudo o que a integração trouxe).
+- **Fila de jobs**: container `queue` e jobs por empresa para sincronizar e pedir o relatório de Pix enviados (o scheduler
+  só enfileira); o relatório pedido é lido sozinho ~90 s depois, sem clicar de novo.
 - **Lançamentos do Mercado Pago na tela de editar**: seção bloqueada "Dados do Mercado Pago" (ID, status, meio de
   pagamento, parcelas, valor, tarifa, líquido, estorno e datas). Tipo, valor, data e status ficam travados (também na API e
   no "Efetivar" em lote, porque o próximo sync os sobrescreveria); descrição, categoria e cliente continuam editáveis.

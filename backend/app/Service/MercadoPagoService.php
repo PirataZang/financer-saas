@@ -40,6 +40,9 @@ class MercadoPagoService
         'fees' => true,
         // Payments not approved yet (boleto issued, Pix waiting) as pending incomes.
         'pending' => true,
+        // Pix and transfers sent: needs the "Liberações" report, which creates a file (and a notice) in the
+        // account each time it is asked for, so it is opt-in.
+        'transfers' => false,
     ];
 
     private const FIRST_SYNC_DAYS = 90;
@@ -211,6 +214,7 @@ class MercadoPagoService
             'import_from' => ['sometimes', 'nullable', 'date_format:Y-m-d', 'before_or_equal:today', 'after_or_equal:'.now()->subDays(self::MAX_IMPORT_DAYS)->toDateString()],
             'fees' => ['sometimes', 'boolean'],
             'pending' => ['sometimes', 'boolean'],
+            'transfers' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -228,6 +232,9 @@ class MercadoPagoService
      * Pulls every payment changed since the cursor (first run: settings.import_from) and applies it.
      * One run per integration at a time; audit log stays out of it (thousands of automatic rows).
      *
+     * Also reads the Pix/transfer reports that are ready (settings.transfers); asking for a new one is
+     * requestReport(), on a schedule and on "Sincronizar agora".
+     *
      * @return array{payments: int}
      */
     public function sync(Integration $integration): array
@@ -240,7 +247,9 @@ class MercadoPagoService
         try {
             return Company::as($integration->company_id, fn () => activity()->withoutLogs(function () use ($integration) {
                 $result = $this->pull($integration);
-                $this->pullTransfers($integration);
+                if ($this->settings($integration)['transfers']) {
+                    $this->pullTransfers($integration);
+                }
 
                 return $result;
             }));
@@ -381,13 +390,36 @@ class MercadoPagoService
                 $cursor = $knownUntil($file);
                 $integration->forceFill(['payouts_cursor' => $cursor])->save();
             }
-
-            // A day of overlap: movements show up in the report a little after they happen (rows are idempotent).
-            $settings = $this->settings($integration);
-            $from = $cursor?->subDay() ?? CarbonImmutable::parse($settings['import_from'] ?? now()->subDays(self::FIRST_SYNC_DAYS)->toDateString(), $timezone)->startOfDay();
-            $this->client->requestReport($token, $from->utc()->format('Y-m-d\TH:i:s\Z'), now()->utc()->format('Y-m-d\TH:i:s\Z'));
         } catch (RuntimeException $e) {
             $integration->forceFill(['last_error' => Str::limit('Pix enviados e transferências: '.$e->getMessage(), 250)])->save();
+        }
+    }
+
+    /**
+     * Asks Mercado Pago for a new "Liberações" report (ready in about a minute; the next sync reads it).
+     * Each request creates a file in the account and notifies its owner, so it only happens when the
+     * schedule says so (bootstrap/app.php) or the user presses "Sincronizar agora", and never twice in a row.
+     */
+    public function requestReport(Integration $integration): bool
+    {
+        $pending = "mercadopago:report:{$integration->id}";
+        if (!$this->settings($integration)['transfers'] || Cache::has($pending)) {
+            return false;
+        }
+
+        try {
+            $timezone = SettingsService::for($integration->company)['finance']['timezone'];
+            // A day of overlap: movements show up in the report a while after they happen (rows are idempotent).
+            $from = $integration->payouts_cursor?->subDay()
+                ?? CarbonImmutable::parse($this->settings($integration)['import_from'] ?? now()->subDays(self::FIRST_SYNC_DAYS)->toDateString(), $timezone)->startOfDay();
+            $this->client->requestReport($this->accessToken($integration), $from->utc()->format('Y-m-d\TH:i:s\Z'), now()->utc()->format('Y-m-d\TH:i:s\Z'));
+            Cache::put($pending, true, now()->addMinutes(3));
+
+            return true;
+        } catch (RuntimeException $e) {
+            $integration->forceFill(['last_error' => Str::limit('Pix enviados e transferências: '.$e->getMessage(), 250)])->save();
+
+            return false;
         }
     }
 

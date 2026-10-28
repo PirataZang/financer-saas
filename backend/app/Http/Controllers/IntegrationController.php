@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Attributes\Permission;
 use App\Enums\IntegrationProvider;
+use App\Jobs\RequestIntegrationReport;
+use App\Jobs\SyncIntegration;
 use App\Models\Integration;
 use App\Service\MercadoPagoService;
 use Illuminate\Http\JsonResponse;
@@ -68,11 +70,16 @@ class IntegrationController extends Controller
 
         try {
             $result = $this->service($provider)->sync($integration);
+            $requested = $this->service($provider)->requestReport($integration->refresh());
+            if ($requested) {
+                // Ready in about a minute: read it without asking the user to come back.
+                SyncIntegration::dispatch($integration->id)->delay(now()->addSeconds(RequestIntegrationReport::READY_AFTER));
+            }
         } catch (RuntimeException $e) {
             throw ValidationException::withMessages(['integration' => [$e->getMessage()]]);
         }
 
-        return response()->json([...$this->service($provider)->card(), 'synced' => $result['payments']]);
+        return response()->json([...$this->service($provider)->card(), 'synced' => $result['payments'], 'report_requested' => $requested]);
     }
 
     #[Permission('settings.integrations')]

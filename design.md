@@ -490,18 +490,22 @@ nunca movê-lo — sem cobrança, estorno, boleto ou transferência a partir do 
   API; a resposta nunca devolve o token) e já sincroniza. Sem `.env`, sem aplicação da plataforma, sem OAuth. Uma
   empresa não troca de conta sem remover a integração. Token revogado/vencido → o card mostra o erro e pede para
   conectar de novo.
+- **Jobs** — o `scheduler` só **enfileira**; o container `queue` (`queue:work`, reinicia a cada hora para pegar deploy)
+  executa `App\Jobs\SyncIntegration` (um por integração, `ShouldBeUnique`) e `App\Jobs\RequestIntegrationReport`
+  (pede o relatório e agenda a leitura 90 s depois). Falha de uma empresa não atrasa as outras; jobs que quebram
+  vão para `failed_jobs`. Processo novo = novo job em `app/Jobs` + uma linha em `bootstrap/app.php`.
 - **Sincronização** (`MercadoPagoService::sync`) — a cada 30 min pelo container `scheduler`
-  (`integrations:sync`) e no botão "Sincronizar agora" (`throttle:integration-sync`). Busca `/v1/payments/search`
+  (`integrations:sync`, que enfileira) e no botão "Sincronizar agora" (`throttle:integration-sync`). Busca `/v1/payments/search`
   por `date_last_updated` a partir do cursor (1ª vez: `settings.import_from` ou 90 dias), até 2000 por execução,
   com lock por integração e sem gravar auditoria. Cada pagamento é espelhado em `mercado_pago_payments` e vira
   transações `source = mercado_pago` idempotentes (`external_id` = `<id>`, `<id>:fee`, `<id>:refund`): recebido =
   receita (efetivada se aprovado/estornado/contestado, pendente se aguardando e `settings.pending`), tarifa =
   despesa (`settings.fees`), estorno/chargeback = despesa; pago pela conta = despesa em Compras. Valor, status e
   data seguem o Mercado Pago; descrição e categoria ficam como o usuário deixou; lançamento excluído não volta.
-- **Pix enviados e transferências** (`pullTransfers`) — não são "pagamentos" para `/v1/payments/search`; só existem no
+- **Pix enviados e transferências** (`pullTransfers`, opt-in: `settings.transfers`, desligado por padrão) — não são "pagamentos" para `/v1/payments/search`; só existem no
   relatório **Liberações** (`/v1/account/release_report`). A cada sync o sistema lê os relatórios prontos (linhas
   `payout` viram despesa em "Transferências · Mercado Pago", `external_id = payout:<id>`) e pede o próximo
-  (a partir de 1 dia antes do último lido; fica pronto em ~1 min; mas o Mercado Pago demora para listar movimentos recentes nele: o R$ 1 enviado às 21:30 não estava no relatório gerado às 21:52, e não existe webhook para Pix enviado). O cursor é
+  (`integrations:report` (agendado às 08:00, 15:00 e 20:00 de São Paulo em `bootstrap/app.php`, sem cron externo: roda no container `scheduler`) pede o relatório, porque cada pedido cria um arquivo na conta e avisa o dono; o botão "Sincronizar agora" também pede um (1 por vez, 3 min) e o card avisa para sincronizar de novo em ~1 min; o `integrations:sync` de 30 min só lê o que está pronto; a partir de 1 dia antes do último lido; fica pronto em ~1 min; mas o Mercado Pago demora para listar movimentos recentes nele: o R$ 1 enviado às 21:30 não estava no relatório gerado às 21:52, e não existe webhook para Pix enviado). O cursor é
   `integrations.payouts_cursor`. Falha aqui vai para o card (`last_error`) sem desfazer os pagamentos. Retiradas para o
   próprio banco, rendimentos (`asset_management`) e Pix **recebidos** por transferência não são lidos por esse caminho.
 - **Compras da conta** — para o que a conta pagou como compradora a busca esconde `collector_id` e `payer`; não ser o

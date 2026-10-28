@@ -2,17 +2,22 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\RequestIntegrationReport;
+use App\Jobs\SyncIntegration;
 use App\Models\Category;
 use App\Models\Company;
 use App\Models\Integration;
 use App\Models\MercadoPagoPayment;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Service\MercadoPagoService;
 use App\Service\PermissionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class IntegrationTest extends TestCase
@@ -91,6 +96,13 @@ class IntegrationTest extends TestCase
             ->assertJson(['connected' => true, 'active' => true, 'account' => ['nickname' => 'LOJA_AURORA']]);
     }
 
+    /** Pix sent is opt-in (it makes Mercado Pago generate a report): turn it on and sync. */
+    private function withTransfers(array $headers): void
+    {
+        $this->putJson('/api/integrations/mercado_pago', ['settings' => ['transfers' => true]], $headers)->assertOk();
+        $this->postJson('/api/integrations/mercado_pago/sync', [], $headers)->assertOk();
+    }
+
     private function tx(string $externalId): ?Transaction
     {
         return Transaction::withTrashed()->where('source', 'mercado_pago')->where('external_id', $externalId)->first();
@@ -145,8 +157,8 @@ class IntegrationTest extends TestCase
         $this->assertSame(self::TOKEN, Integration::sole()->credentials['access_token']);
         $this->assertStringNotContainsString(self::TOKEN, $this->getJson('/api/integrations', $headers)->getContent());
 
-        // Read-only towards the provider: GETs, plus asking for the movements report (a file, not money).
-        Http::assertNotSent(fn (Request $r) => $r->method() !== 'GET' && !str_ends_with($r->url(), '/v1/account/release_report'));
+        // Read-only towards the provider, and no report is asked for unless Pix sent is turned on.
+        Http::assertNotSent(fn (Request $r) => $r->method() !== 'GET');
     }
 
     public function test_resync_follows_status_changes_and_keeps_user_edits(): void
@@ -185,14 +197,17 @@ class IntegrationTest extends TestCase
 
     public function test_sent_pix_comes_from_the_release_report_and_only_once(): void
     {
-        $this->reports = [['file_name' => 'release-1.csv', 'end_date' => '2026-10-27T23:00:00Z']];
+        $this->reports = [['file_name' => 'release-1.csv', 'end_date' => '2026-10-01T00:00:00Z']];
         $this->reportCsv = "DATE;SOURCE_ID;DESCRIPTION;NET_CREDIT_AMOUNT;NET_DEBIT_AMOUNT\n"
             ."2026-10-25T17:19:34.000-03:00;150;payment;150.00;0.00\n"
             ."2026-10-26T19:56:31.000-03:00;186;reserve_for_payout;0.00;65.00\n"
             ."2026-10-26T19:56:32.000-03:00;186;payout;0.00;65.00\n";
         $headers = $this->headers();
         $this->connect($headers);
+        Http::assertNotSent(fn (Request $r) => $r->method() === 'POST');
+        $this->assertNull($this->tx('payout:186'));
 
+        $this->withTransfers($headers);
         $this->assertEquals(['expense', '65.00', 'paid', '2026-10-26'], [$this->tx('payout:186')->type->value, $this->tx('payout:186')->amount, $this->tx('payout:186')->status->value, $this->tx('payout:186')->date]);
         $this->assertSame('mercado_pago:transfers', $this->tx('payout:186')->category->integration_key);
         $this->assertSame(1, Transaction::where('source', 'mercado_pago')->count());
@@ -205,12 +220,51 @@ class IntegrationTest extends TestCase
         $this->assertNull(Integration::sole()->last_error);
     }
 
+    public function test_sync_and_report_run_as_one_job_per_integration_and_the_report_is_read_without_a_second_click(): void
+    {
+        $this->reports = [['file_name' => 'r.csv', 'end_date' => now()->subHour()->toIso8601String()]];
+        $headers = $this->headers();
+        $this->connect($headers);
+        $this->putJson('/api/integrations/mercado_pago', ['settings' => ['transfers' => true]], $headers)->assertOk();
+        $id = Integration::sole()->id;
+        Queue::fake();
+
+        // The schedule only queues jobs: nothing talks to Mercado Pago until the worker runs them.
+        $this->artisan('integrations:report')->expectsOutputToContain('1 pedido(s)')->assertSuccessful();
+        Queue::assertPushed(RequestIntegrationReport::class, fn ($job) => $job->integrationId === $id);
+        Http::assertNotSent(fn (Request $r) => $r->method() === 'POST');
+
+        // The report job asks once and queues the read ~90s later; while that one is pending it asks for nothing.
+        $mercadoPago = app(MercadoPagoService::class);
+        (new RequestIntegrationReport($id))->handle($mercadoPago);
+        (new RequestIntegrationReport($id))->handle($mercadoPago);
+        $this->assertCount(1, Http::recorded(fn (Request $r) => $r->method() === 'POST'));
+        Queue::assertPushed(SyncIntegration::class, fn ($job) => $job->integrationId === $id && $job->delay !== null);
+
+        // The 30-minute schedule queues one sync per integration (a second while one waits is dropped: ShouldBeUnique).
+        $this->artisan('integrations:sync')->expectsOutputToContain('1 sincronização(ões)')->assertSuccessful();
+
+        // Nothing to ask for when Pix sent is off, and an inactive integration no longer runs.
+        Cache::flush();
+        $this->putJson('/api/integrations/mercado_pago', ['settings' => ['transfers' => false]], $headers)->assertOk();
+        (new RequestIntegrationReport($id))->handle($mercadoPago);
+        $this->assertCount(1, Http::recorded(fn (Request $r) => $r->method() === 'POST'));
+        $this->putJson('/api/integrations/mercado_pago', ['active' => false], $headers)->assertOk();
+        $this->assertNull(Integration::runnable($id));
+
+        // "Sincronizar agora" asks for a report and queues the read, once.
+        $this->putJson('/api/integrations/mercado_pago', ['active' => true, 'settings' => ['transfers' => true]], $headers)->assertOk();
+        $this->postJson('/api/integrations/mercado_pago/sync', [], $headers)->assertOk()->assertJson(['report_requested' => true]);
+        $this->postJson('/api/integrations/mercado_pago/sync', [], $headers)->assertOk()->assertJson(['report_requested' => false]);
+    }
+
     public function test_a_failing_report_is_shown_on_the_card_without_losing_the_payments(): void
     {
         $this->payments = [$this->payment(1)];
         $this->reportsDown = true;
         $headers = $this->headers();
         $this->postJson('/api/integrations/mercado_pago/connect', ['access_token' => self::TOKEN], $headers)->assertOk();
+        $this->withTransfers($headers);
 
         $this->assertNotNull($this->tx('1'));
         $this->assertStringContainsString('Pix enviados', Integration::sole()->last_error);
@@ -220,9 +274,10 @@ class IntegrationTest extends TestCase
     {
         $this->payments = [$this->payment(1, ['transaction_amount' => 200, 'installments' => 3, 'payment_type_id' => 'credit_card', 'payment_method_id' => 'visa'])];
         $this->reportCsv = "DATE;SOURCE_ID;DESCRIPTION;NET_CREDIT_AMOUNT;NET_DEBIT_AMOUNT\n2026-10-26T19:56:32.000-03:00;186;payout;0.00;65.00\n";
-        $this->reports = [['file_name' => 'r.csv', 'end_date' => '2026-10-27T23:00:00Z']];
+        $this->reports = [['file_name' => 'r.csv', 'end_date' => '2026-10-01T00:00:00Z']];
         $headers = $this->headers(['settings.integrations', 'finance.transaction.view', 'finance.transaction.update']);
         $this->connect($headers);
+        $this->withTransfers($headers);
 
         $sale = $this->tx('1');
         $facts = collect($this->getJson("/api/finance/transactions/{$sale->id}", $headers)->assertOk()->json('integration.fields'))->pluck('value', 'label');

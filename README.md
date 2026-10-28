@@ -95,7 +95,7 @@ Opcional e somente leitura: em **Configurações › Integrações** cada empres
 do Mercado Pago (Developers › sua aplicação › Credenciais de produção) e o sistema importa, a cada 30 minutos, vendas
 e recebimentos (Pix, cartão, boleto), pagamentos feitos pela conta, tarifas e estornos para o financeiro, com um
 painel próprio no Dashboard Financeiro. Não há nada para configurar no `.env`; o `docker compose up -d` sobe também
-o `scheduler` (sincronização automática).
+o `scheduler` (agenda) e o `queue` (executa os jobs de sincronização, um por empresa).
 
 O token fica criptografado com o `APP_KEY` do `backend/.env` — não troque essa chave depois de conectar.
 Detalhes em `design.md` (seção 17).

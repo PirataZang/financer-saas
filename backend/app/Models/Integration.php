@@ -36,4 +36,23 @@ class Integration extends Model
     {
         return static::where('provider', $provider)->first();
     }
+
+    /**
+     * Active integrations of active companies, across every company (schedulers and jobs run outside a
+     * request, so no company is current). With an $id: that one, or null when it can't run any more.
+     *
+     * @return ($id is null ? \Illuminate\Support\Collection<int, self> : ?self)
+     */
+    public static function runnable(?int $id = null): \Illuminate\Support\Collection|self|null
+    {
+        $query = static::withoutGlobalScope('company')
+            ->where('provider', IntegrationProvider::MercadoPago)
+            ->where('active', true)
+            ->with('company');
+        $isRunnable = fn (self $integration) => $integration->company?->isActive();
+
+        return $id === null
+            ? $query->get()->filter($isRunnable)->values()
+            : $query->whereKey($id)->get()->filter($isRunnable)->first();
+    }
 }

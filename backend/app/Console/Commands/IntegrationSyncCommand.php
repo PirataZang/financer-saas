@@ -2,39 +2,29 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\IntegrationProvider;
+use App\Jobs\SyncIntegration;
 use App\Models\Integration;
-use App\Service\MercadoPagoService;
 use Illuminate\Console\Command;
-use RuntimeException;
 
 /**
- * Pulls every active integration of every company (scheduled in bootstrap/app.php). A failing
- * company is recorded on its card (last_error) and doesn't stop the others.
+ * Queues one SyncIntegration job per active integration (scheduled in bootstrap/app.php; the `queue`
+ * container runs them). A failing company is recorded on its card (last_error) and doesn't stop the others.
  */
 class IntegrationSyncCommand extends Command
 {
-    protected $signature = 'integrations:sync';
+    protected $signature = 'integrations:sync {--now : Sincroniza aqui mesmo, sem passar pela fila}';
 
-    protected $description = 'Sincroniza as integrações ativas (Mercado Pago) de todas as empresas';
+    protected $description = 'Enfileira a sincronização das integrações ativas (Mercado Pago) de todas as empresas';
 
-    public function handle(MercadoPagoService $mercadoPago): int
+    public function handle(): int
     {
-        $integrations = Integration::withoutGlobalScope('company')
-            ->where('provider', IntegrationProvider::MercadoPago)
-            ->where('active', true)
-            ->with('company')
-            ->get()
-            ->filter(fn (Integration $integration) => $integration->company?->isActive());
+        $integrations = Integration::runnable();
 
         foreach ($integrations as $integration) {
-            try {
-                $result = $mercadoPago->sync($integration);
-                $this->line("empresa {$integration->company_id}: {$result['payments']} pagamento(s)");
-            } catch (RuntimeException $e) {
-                $this->warn("empresa {$integration->company_id}: {$e->getMessage()}");
-            }
+            $this->option('now') ? SyncIntegration::dispatchSync($integration->id) : SyncIntegration::dispatch($integration->id);
         }
+
+        $this->line("{$integrations->count()} sincronização(ões) ".($this->option('now') ? 'executada(s)' : 'enfileirada(s)'));
 
         return self::SUCCESS;
     }

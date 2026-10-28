@@ -39,6 +39,11 @@ return Application::configure(basePath: dirname(__DIR__))
     // Runs in the `scheduler` container (docker-compose: php artisan schedule:work).
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('integrations:sync')->everyThirtyMinutes()->withoutOverlapping(30);
+        // Sent Pix come from a report Mercado Pago makes on request (and notifies about): ask at these hours only.
+        // ponytail: fixed to São Paulo time for every company; a per-company hour list if that ever matters.
+        foreach (['08:00', '15:00', '20:00'] as $time) {
+            $schedule->command('integrations:report')->dailyAt($time)->timezone('America/Sao_Paulo');
+        }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

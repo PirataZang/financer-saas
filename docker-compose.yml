@@ -33,7 +33,7 @@ services:
     networks:
       - financial_bot_network
 
-  # Runs scheduled jobs (bootstrap/app.php withSchedule): integrations:sync every 30 min.
+  # Runs the schedule (bootstrap/app.php withSchedule): it only queues jobs; the `queue` service runs them.
   scheduler:
     build:
       context: ./backend
@@ -42,6 +42,35 @@ services:
     restart: unless-stopped
     # Skips the entrypoint (migrations/seed are the backend's job).
     entrypoint: ["php", "artisan", "schedule:work"]
+    volumes:
+      - ./backend:/var/www/html
+    environment:
+      - APP_ENV=${APP_ENV:-local}
+      - APP_DEBUG=${APP_DEBUG:-true}
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE:-financial_bot}
+      - DB_USERNAME=${DB_USER:-financial_bot}
+      - DB_PASSWORD=${DB_PASSWORD:-01a25d4dc931586475f11506}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-6f93b8c8bd1cc6b1f3fa83b7}
+    depends_on:
+      - backend
+    networks:
+      - financial_bot_network
+
+  # Runs queued jobs (app/Jobs): one sync / report request per company, queued by the scheduler.
+  # --max-time makes it restart hourly, so a deploy is picked up without queue:restart.
+  queue:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_NAME:-financial-bot}_queue
+    restart: unless-stopped
+    # Skips the entrypoint (migrations/seed are the backend's job).
+    entrypoint: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--max-time=3600"]
     volumes:
       - ./backend:/var/www/html
     environment:

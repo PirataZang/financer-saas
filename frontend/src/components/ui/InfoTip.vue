@@ -31,7 +31,7 @@
           @mouseleave="hideSoon"
         >
           <strong v-if="title">{{ title }}</strong>
-          <span>{{ text }}</span>
+          <div class="info-tip__body"><slot>{{ text }}</slot></div>
         </div>
       </Transition>
     </Teleport>
@@ -45,7 +45,8 @@ import { onBeforeUnmount, ref, useId } from 'vue'
 // it does; Esc / leaving closes it. Teleported + fixed so modals and cards never clip it.
 const props = defineProps({
   title: { type: String, default: '' },
-  text: { type: String, required: true },
+  // Plain text, or a slot for richer content (lists).
+  text: { type: String, default: '' },
 })
 
 const id = `tip-${useId()}`
@@ -143,6 +144,33 @@ onBeforeUnmount(() => clearTimeout(timer))
   line-height: 1.45;
   text-align: left;
   white-space: normal;
+}
+
+.info-tip__bubble .info-tip__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-tip__bubble ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding-left: 16px;
+}
+
+.info-tip__bubble p {
+  margin: 0;
+}
+
+.info-tip__bubble .info-tip__heading {
+  margin-top: 2px;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .info-tip__bubble strong {

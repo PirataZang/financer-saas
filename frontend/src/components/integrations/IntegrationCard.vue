@@ -2,7 +2,7 @@
   <article class="integration" :class="{ 'is-off': integration.connected && !integration.active }" :aria-labelledby="`integration-${integration.provider}`">
     <header class="integration__head">
       <span class="integration__logo">
-        <img :src="meta.logo" alt="" width="30" height="30" />
+        <img :src="meta.logo" alt="" width="40" height="40" />
       </span>
       <div class="integration__title">
         <h4 :id="`integration-${integration.provider}`">{{ meta.name }}</h4>
@@ -18,19 +18,17 @@
       />
     </header>
 
-    <p class="integration__summary">{{ meta.summary }}</p>
-
-    <ul class="integration__can">
-      <li v-for="item in meta.capabilities" :key="item.text">
-        <i :class="item.icon" aria-hidden="true" />
-        <span>{{ item.text }}</span>
-      </li>
-    </ul>
-
-    <p class="integration__limits">
-      <i class="fa-solid fa-shield-halved" aria-hidden="true" />
-      <span>{{ meta.limits }}</span>
-    </p>
+    <div class="integration__summary">
+      {{ meta.summary }}
+      <InfoTip :title="`O que o ${meta.name} faz e não faz`">
+        <p class="info-tip__heading">O que faz</p>
+        <ul>
+          <li v-for="item in meta.capabilities" :key="item.text">{{ item.text }}</li>
+        </ul>
+        <p class="info-tip__heading">O que não faz</p>
+        <p>{{ meta.limits }}</p>
+      </InfoTip>
+    </div>
 
     <dl v-if="integration.connected" class="integration__facts">
       <div>
@@ -82,6 +80,7 @@ import { computed } from 'vue'
 import Button from '@/components/utils/Button.vue'
 import Switch from '@/components/utils/Switch.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
+import InfoTip from '@/components/ui/InfoTip.vue'
 import { sinceTime } from '@/utils/date'
 
 // One provider of Configurações › Integrações. `integration` = GET /integrations row,
@@ -112,8 +111,8 @@ const plural = (n, one, many) => `${n.toLocaleString('pt-BR')} ${n === 1 ? one :
 .integration {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 20px;
+  gap: 12px;
+  padding: 16px;
   border: 1px solid $color-border;
   border-radius: $radius-lg;
   background: $color-bg-card;
@@ -130,14 +129,15 @@ const plural = (n, one, many) => `${n.toLocaleString('pt-BR')} ${n === 1 ? one :
   gap: 14px;
 }
 
+// The logo is the card's anchor: big, on its own tile.
 .integration__logo {
   display: grid;
-  flex: 0 0 48px;
+  flex: 0 0 64px;
   place-items: center;
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
   border: 1px solid $color-border;
-  border-radius: $radius-md;
+  border-radius: $radius-lg;
   background: $color-white;
   transition: filter 0.2s ease, opacity 0.2s ease;
 }
@@ -145,15 +145,15 @@ const plural = (n, one, many) => `${n.toLocaleString('pt-BR')} ${n === 1 ? one :
 .integration__title {
   display: flex;
   flex: 1;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
   min-width: 0;
 
   h4 {
     margin: 0;
     color: $color-text;
-    font-size: 1.05rem;
+    font-size: 1.15rem;
     font-weight: 700;
   }
 }
@@ -170,64 +170,22 @@ const plural = (n, one, many) => `${n.toLocaleString('pt-BR')} ${n === 1 ? one :
 
 .integration__summary {
   margin: 0;
-  max-width: 62ch;
-  color: $color-text-secondary;
-  font-size: $font-md;
-  line-height: 1.5;
-}
-
-.integration__can {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-
-  li {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    color: $color-text-secondary;
-    font-size: $font-sm;
-    line-height: 1.45;
-  }
-
-  i {
-    flex: 0 0 16px;
-    color: $color-primary;
-    text-align: center;
-  }
-}
-
-.integration__limits {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: $radius-md;
-  background: $color-bg-muted;
   color: $color-text-secondary;
   font-size: $font-sm;
-  line-height: 1.45;
-
-  i {
-    color: $color-success;
-  }
+  line-height: 1.5;
 }
 
 .integration__facts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px 16px;
   margin: 0;
-  padding-top: 14px;
+  padding: 12px 0 0;
   border-top: 1px solid $color-border;
 
   dt {
     color: $color-text-muted;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 600;
   }
 
@@ -237,14 +195,14 @@ const plural = (n, one, many) => `${n.toLocaleString('pt-BR')} ${n === 1 ? one :
     gap: 2px;
     margin: 2px 0 0;
     color: $color-text;
-    font-size: $font-md;
+    font-size: $font-sm;
     font-weight: 600;
     overflow-wrap: anywhere;
   }
 
   small {
     color: $color-text-muted;
-    font-size: $font-sm;
+    font-size: 0.75rem;
     font-weight: 400;
   }
 }
@@ -254,7 +212,7 @@ const plural = (n, one, many) => `${n.toLocaleString('pt-BR')} ${n === 1 ? one :
   align-items: baseline;
   gap: 10px;
   margin: 0;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-radius: $radius-md;
   background: $color-info-soft;
   color: $color-text-secondary;
@@ -279,7 +237,6 @@ const plural = (n, one, many) => `${n.toLocaleString('pt-BR')} ${n === 1 ? one :
   flex-wrap: wrap;
   gap: 8px;
   margin-top: auto;
-  padding-top: 4px;
 }
 
 // Destructive action set apart from the everyday ones.

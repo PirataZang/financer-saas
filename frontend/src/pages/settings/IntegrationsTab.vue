@@ -160,7 +160,10 @@ const sync = async (integration) => {
   try {
     const card = await call(integration.provider, `/integrations/${integration.provider}/sync`, { method: 'POST' })
     replace(card)
-    swal.toastSuccess(card.synced ? `${card.synced} pagamento(s) atualizado(s).` : 'Tudo em dia: nenhum pagamento novo.')
+    // The queued read runs ~90s after the request: refresh the card when it has.
+    if (card.report_requested) setTimeout(load, 120_000)
+    const done = card.synced ? `${card.synced} pagamento(s) atualizado(s).` : 'Tudo em dia: nenhum pagamento novo.'
+    swal.toastSuccess(card.report_requested ? `${done} Pedi o relatório de Pix enviados: ele entra sozinho em cerca de 2 minutos.` : done)
   } catch (err) {
     swal.toastError(err.message)
     load()
@@ -229,7 +232,7 @@ onMounted(load)
 
 .integrations {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
   gap: 16px;
 }
 
