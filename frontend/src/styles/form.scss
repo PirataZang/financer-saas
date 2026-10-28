@@ -61,6 +61,13 @@
   line-height: 1.3;
 }
 
+// Label + InfoTip: the ⓘ sits outside <label> so it doesn't join the field's accessible name.
+.field-label--tip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .field-control {
   display: flex;
   width: 100%;

@@ -37,6 +37,18 @@ return [
         'decay_seconds' => (int) env('RATE_LIMIT_PORTAL_CODE_DECAY', 600),
     ],
 
+    // Integrations: each manual sync calls the provider's API many times; the scheduler covers the rest.
+    'integration-sync' => [
+        'max_attempts' => (int) env('RATE_LIMIT_INTEGRATION_SYNC_MAX', 6),
+        'decay_seconds' => (int) env('RATE_LIMIT_INTEGRATION_SYNC_DECAY', 600),
+    ],
+
+    // Connection attempts (each one validates a token against the provider).
+    'integration-connect' => [
+        'max_attempts' => (int) env('RATE_LIMIT_INTEGRATION_CONNECT_MAX', 10),
+        'decay_seconds' => (int) env('RATE_LIMIT_INTEGRATION_CONNECT_DECAY', 600),
+    ],
+
     // Telegram bot (routes/api.php `bot`). Every bot request comes from the same container IP,
     // so these are keyed per Telegram user (`by_header`, set by the bot and checked by BotMiddleware).
     'bot' => [

@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Every route is rate limited (profile `default` in config/rate-limit.php);
         // stricter profiles are added per route (routes/api.php).
         $middleware->throttleApi('default');
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->web(append: 'throttle:default');
 
         $middleware->alias([
@@ -33,6 +35,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'bot' => \App\Http\Middleware\BotMiddleware::class,
             'portal' => \App\Http\Middleware\PortalMiddleware::class,
         ]);
+    })
+    // Runs in the `scheduler` container (docker-compose: php artisan schedule:work).
+    ->withSchedule(function (Schedule $schedule): void {
+        $schedule->command('integrations:sync')->everyThirtyMinutes()->withoutOverlapping(30);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

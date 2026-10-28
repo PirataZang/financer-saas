@@ -8,6 +8,7 @@ use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Service\FinanceDashboardService;
 use App\Service\FinanceExportService;
+use App\Service\MercadoPagoService;
 use App\Service\TransactionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class TransactionController extends Controller
         protected TransactionService $transactionService,
         protected FinanceDashboardService $dashboardService,
         protected FinanceExportService $exportService,
+        protected MercadoPagoService $mercadoPago,
     ) {
     }
 
@@ -109,11 +111,14 @@ class TransactionController extends Controller
     {
         $validated = $request->validate($this->dashboardService->rules());
 
-        return response()->json($this->dashboardService->summary(
-            $validated['from'] ?? now()->startOfMonth()->toDateString(),
-            $validated['to'] ?? now()->toDateString(),
-            $validated,
-        ));
+        $from = $validated['from'] ?? now()->startOfMonth()->toDateString();
+        $to = $validated['to'] ?? now()->toDateString();
+
+        return response()->json([
+            ...$this->dashboardService->summary($from, $to, $validated),
+            // Integration panel (null = not connected or switched off); its own figures, same period.
+            'mercado_pago' => $this->mercadoPago->dashboard($from, $to),
+        ]);
     }
 
     /**

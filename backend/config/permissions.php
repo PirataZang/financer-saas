@@ -77,6 +77,7 @@ return [
             'finance' => 'Alterar os padrões do financeiro',
             'telegram' => 'Gerenciar o bot do Telegram (código de vínculo e contas)',
             'portal' => 'Configurar o portal do cliente (link e dados de pagamento)',
+            'integrations' => 'Gerenciar integrações (conectar, sincronizar e remover o Mercado Pago)',
         ],
     ],
 ];

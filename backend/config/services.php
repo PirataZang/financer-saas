@@ -50,4 +50,10 @@ return [
         'bot_username' => env('TELEGRAM_BOT_USERNAME'),
     ],
 
+    // Mercado Pago (Configurações › Integrações): each company brings its own Access Token (stored
+    // encrypted in integrations.credentials); nothing about the account lives here.
+    'mercadopago' => [
+        'timeout' => (int) env('MERCADOPAGO_TIMEOUT', 15),
+    ],
+
 ];

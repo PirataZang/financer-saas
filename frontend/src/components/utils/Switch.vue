@@ -1,6 +1,9 @@
 <template>
   <div class="switch-container">
-    <label v-if="label" class="switch-label">{{ label }}</label>
+    <span v-if="label" class="switch-label">
+      {{ label }}
+      <InfoTip v-if="tip" :title="label" :text="tip" />
+    </span>
 
     <div
       class="switch-wrapper"
@@ -22,7 +25,11 @@
 </template>
 
 <script setup>
+import InfoTip from '@/components/ui/InfoTip.vue'
+
 const props = defineProps({
+  /** Help shown by an ⓘ next to the label (components/ui/InfoTip.vue): what the field is and what it does. */
+  tip: { type: String, default: '' },
   modelValue: {
     type: Boolean,
     default: false,
@@ -64,9 +71,11 @@ const toggle = () => {
 }
 
 .switch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
   color: var(--text-secondary);
-  display: block;
 }
 
 .switch-wrapper {

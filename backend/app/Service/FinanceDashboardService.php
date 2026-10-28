@@ -109,7 +109,26 @@ class FinanceDashboardService
             'counts' => array_map(fn (array $list) => array_sum(array_column($list, 'count')), $categories),
             'timeline' => $timeline,
             'categories' => $categories,
+            'sources' => $this->bySource($inPeriod),
         ];
+    }
+
+    /**
+     * Where the period's money was recorded from (manual, Telegram, Mercado Pago...): the dashboard's
+     * "financial-bot x integrações" view.
+     *
+     * @return list<array{source: string, label: string, icon: string, income: float, expense: float}>
+     */
+    private function bySource(Closure $inPeriod): array
+    {
+        $rows = $inPeriod()->select('source', 'type')->selectRaw('SUM(amount) as total')->groupBy('source', 'type')->toBase()->get();
+
+        return $rows->groupBy('source')->map(function ($group, $source) {
+            $case = TransactionSource::from($source);
+            $total = fn (string $type) => round((float) $group->firstWhere('type', $type)?->total, 2);
+
+            return ['source' => $source, 'label' => $case->label(), 'icon' => $case->icon(), 'income' => $total('income'), 'expense' => $total('expense')];
+        })->values()->all();
     }
 
     /**

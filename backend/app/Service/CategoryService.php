@@ -65,6 +65,10 @@ class CategoryService
         $category = Category::findOrFail($id);
         if (isset($data['type']) && $data['type'] !== $category->type->value) {
             $this->guardGoal($category);
+            $this->guardIntegration($category);
+        }
+        if (($data['active'] ?? true) === false) {
+            $this->guardIntegration($category);
         }
         $category->update($data);
 
@@ -78,6 +82,7 @@ class CategoryService
     {
         $category = Category::findOrFail($id);
         $this->guardGoal($category);
+        $this->guardIntegration($category);
 
         return $category->delete();
     }
@@ -87,6 +92,14 @@ class CategoryService
     {
         if ($category->goal()->exists()) {
             throw ValidationException::withMessages(['category' => ['Esta categoria pertence a uma meta: altere o tipo ou exclua pela tela de Metas.']]);
+        }
+    }
+
+    /** An integration's category (Mercado Pago) receives its entries: it stays active, typed and alive while connected. */
+    private function guardIntegration(Category $category): void
+    {
+        if ($category->integration_key) {
+            throw ValidationException::withMessages(['category' => ['Esta categoria é da integração com o Mercado Pago: dá para mudar nome, ícone e cor; para removê-la, remova a integração em Configurações › Integrações.']]);
         }
     }
 

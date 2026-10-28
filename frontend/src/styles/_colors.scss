@@ -26,6 +26,17 @@ $color-danger-soft: #fef2f2;
 $color-info: #2563eb;
 $color-info-soft: #eff6ff;
 
+// Charts — categorical identity (payment method, source...), fixed order, never cycled. Validated
+// with the dataviz validator on white (CVD ΔE ≥ 9.1, normal ≥ 19.6); 3, 4 and 5 are < 3:1 on white,
+// so charts using them always show labels/legend. Status meaning keeps the status tokens above.
+$chart-1: #2a78d6;
+$chart-2: #eb6834;
+$chart-3: #1baf7a;
+$chart-4: #eda100;
+$chart-5: #e87ba4;
+$chart-6: #008300;
+$chart-7: #6250d6;
+
 // Surfaces
 $color-white: #ffffff;
 $color-bg-app: #f4f6f9;
