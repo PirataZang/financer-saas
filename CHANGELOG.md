@@ -35,6 +35,9 @@ Como escrever:
 
 ### Added
 
+- **Documentos** (templates com variáveis): editor de folha A4 com toolbar e variáveis `{{Cliente.name}}`, `{{Projeto.*}}`,
+  `{{Empresa.*}}`, `{{Valor}}` e `{{Data}}`, preenchidas ao emitir o PDF (dompdf). HTML sanitizado ao salvar; variável sem
+  dado interrompe a emissão avisando o que falta. Permissões `documents.*`.
 - **Integração com o Mercado Pago** (Configurações › Integrações): cada empresa conecta a própria conta com o Access Token (guardado criptografado) e o
   financeiro passa a receber, a cada 30 minutos, vendas e recebimentos por Pix, cartão e boleto, tarifas e
   estornos, compras e, se ligado em Editar, Pix/transferências enviados (via relatório Liberações; cada pedido gera um relatório na conta, por isso é opcional), em categorias da integração. Somente leitura: o sistema não cobra, não estorna e não transfere.

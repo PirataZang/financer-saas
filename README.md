@@ -1,10 +1,12 @@
-# Financial Bot
+# Financer-saas
 
-CRM gerado pela skill `create-crm`, seguindo o mesmo padrão de arquitetura e design do
-peppercore-admin: Laravel 13 (API) + Vue 3 (SPA) + PostgreSQL, tudo em Docker.
+SaaS multi-empresa de gestão financeira e CRM: financeiro (transações, categorias, metas e dashboard), clientes,
+projetos com portal do cliente, lançamentos pelo Telegram e integração com o Mercado Pago. Laravel 13 (API) + Vue 3
+(SPA) + PostgreSQL + Redis, tudo em Docker, no padrão de arquitetura e design do peppercore-admin (gerado pela
+skill `create-crm`).
 
 Veja [`design.md`](design.md) para os padrões de componente, página e backend a seguir ao
-adicionar novas telas/recursos.
+adicionar novas telas/recursos, e [`mercadopago.md`](mercadopago.md) para o planejamento do módulo de cobranças.
 
 ## Subindo o projeto
 
@@ -20,6 +22,21 @@ primeira subida.
 - Frontend: http://localhost:5174 (porta configurável via `FRONTEND_PORT`)
 - Backend/API: http://localhost:8000 (porta configurável via `BACKEND_PORT`)
 - Postgres: porta configurável via `DB_PORT_EXTERNAL`; Redis: via `REDIS_PORT_EXTERNAL`
+
+Serviços do `docker-compose.yml`:
+
+| Serviço | Para quê |
+|---|---|
+| `backend` | API Laravel (migrations e permissões rodam na subida) |
+| `frontend` | SPA Vue (Vite) |
+| `bot` | Bot do Telegram |
+| `scheduler` | `schedule:work`: só **agenda** (sincronização a cada 30 min e pedido de relatório às 8h, 15h e 20h) |
+| `queue` | `queue:work`: executa os jobs enfileirados (`backend/app/Jobs`); reinicia a cada hora para pegar deploy |
+| `postgres`, `redis` | Banco, cache e fila |
+
+Jobs que falharem ficam na tabela `failed_jobs` (`docker compose exec backend php artisan queue:failed`). Sem o
+`queue` rodando, nada sincroniza. Para depurar uma sincronização sem a fila:
+`docker compose exec backend php artisan integrations:sync --now`.
 
 ## Rota da API (local x VPS)
 
@@ -91,14 +108,27 @@ um código de 6 dígitos por e-mail — configure o SMTP (`MAIL_*` no `backend/.
 
 ## Integrações (Mercado Pago)
 
-Opcional e somente leitura: em **Configurações › Integrações** cada empresa cola o **Access Token** da própria conta
-do Mercado Pago (Developers › sua aplicação › Credenciais de produção) e o sistema importa, a cada 30 minutos, vendas
-e recebimentos (Pix, cartão, boleto), pagamentos feitos pela conta, tarifas e estornos para o financeiro, com um
-painel próprio no Dashboard Financeiro. Não há nada para configurar no `.env`; o `docker compose up -d` sobe também
-o `scheduler` (agenda) e o `queue` (executa os jobs de sincronização, um por empresa).
+Opcional: em **Configurações › Integrações** cada empresa cola o **Access Token** da própria conta do Mercado Pago
+(Developers › sua aplicação › Credenciais de produção). O dinheiro continua na conta de cada empresa; o sistema só
+monitora. A cada 30 minutos ele importa vendas e recebimentos (Pix, cartão, boleto), compras feitas pela conta,
+tarifas e estornos para o financeiro, com um painel próprio no Dashboard Financeiro. Não há nada para configurar no
+`.env`; basta o `scheduler` e o `queue` estarem de pé.
+
+**Pix e transferências enviados** são opcionais (interruptor em **Editar** no card): o Mercado Pago só os entrega
+por um relatório da conta, que o sistema pede às 8h, 15h e 20h (Brasília) e no botão **Sincronizar agora**, e lê
+cerca de 90 segundos depois. Cada pedido gera um aviso "foi gerado um relatório" no Mercado Pago, e o relatório
+demora para listar movimentos recentes (de 20 a 90 minutos). Desligado, nenhum relatório é pedido.
 
 O token fica criptografado com o `APP_KEY` do `backend/.env` — não troque essa chave depois de conectar.
-Detalhes em `design.md` (seção 17).
+Detalhes em `design.md` (seção 17). O próximo passo (cobranças, boletos e assinaturas) está planejado em
+[`mercadopago.md`](mercadopago.md).
+
+## Documentos
+
+Em **Documentos**, templates (contratos, propostas...) escritos num editor de folha A4 com variáveis como
+`{{Cliente.name}}`, `{{Projeto.due_date}}`, `{{Empresa.document}}` e `{{Valor}}`. Em **Emitir**, o usuário escolhe
+o documento, o cliente, o projeto e o valor, e baixa o PDF já preenchido. Permissões `documents.*`. Detalhes em
+`design.md` (seção 18).
 
 ## Bot do Telegram
 
@@ -156,8 +186,8 @@ cd bot && npm test                               # parser de valores do bot (nod
 
 ```
 backend/    Laravel 13 — API, auth por bearer token custom (AuthMiddleware/AuthService),
-            auditoria via spatie/laravel-activitylog, Redis (cache/sessão/fila)
-frontend/   Vue 3 + Vite — SPA (login, dashboards com ECharts, usuários, clientes, financeiro)
+            auditoria via spatie/laravel-activitylog, Redis (cache/sessão/fila), jobs em app/Jobs
+frontend/   Vue 3 + Vite — SPA (login, dashboards com ECharts, usuários, clientes, financeiro, integrações)
 bot/        Node + TypeScript — bot do Telegram (grammY); fala só com /api/bot/* do backend
 ```
 

@@ -69,6 +69,16 @@ return [
             'goal.delete' => 'Excluir metas',
         ],
     ],
+    'documents' => [
+        'name' => 'Documentos',
+        'actions' => [
+            'view' => 'Visualizar templates de documento',
+            'create' => 'Criar templates de documento',
+            'update' => 'Editar templates de documento',
+            'delete' => 'Excluir templates de documento',
+            'emit' => 'Emitir documentos em PDF',
+        ],
+    ],
     'settings' => [
         'name' => 'Configurações',
         'actions' => [

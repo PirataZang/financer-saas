@@ -8,6 +8,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\GoalController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\PermissionController;
@@ -106,6 +107,16 @@ Route::middleware(['auth', 'company', 'permission'])->group(function () {
         Route::post('/', [AnnouncementController::class, 'create']);
         Route::put('/{id}', [AnnouncementController::class, 'update']);
         Route::delete('/{id}', [AnnouncementController::class, 'delete']);
+    });
+
+    Route::prefix('documents')->group(function () {
+        Route::get('/', [DocumentController::class, 'list']);
+        Route::get('/variables', [DocumentController::class, 'variables']);
+        Route::get('/{id}/emit', [DocumentController::class, 'emit']);
+        Route::get('/{id}', [DocumentController::class, 'index']);
+        Route::post('/', [DocumentController::class, 'create']);
+        Route::put('/{id}', [DocumentController::class, 'update']);
+        Route::delete('/{id}', [DocumentController::class, 'delete']);
     });
 
     Route::prefix('finance')->group(function () {

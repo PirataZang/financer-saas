@@ -25,6 +25,8 @@ import ProjectList from '@/pages/project/ProjectList.vue'
 import ProjectForm from '@/pages/project/ProjectForm.vue'
 import AnnouncementList from '@/pages/announcement/AnnouncementList.vue'
 import AnnouncementForm from '@/pages/announcement/AnnouncementForm.vue'
+import DocumentList from '@/pages/document/DocumentList.vue'
+import DocumentEditor from '@/pages/document/DocumentEditor.vue'
 // Portal do cliente: lazy chunks, so the CRM bundle doesn't carry the portal screens.
 const PortalLayout = () => import('@/layouts/PortalLayout.vue')
 const PortalLogin = () => import('@/pages/portal/PortalLogin.vue')
@@ -214,6 +216,47 @@ const routes = [
         component: AnnouncementForm,
         props: true,
         meta: { permission: 'announcements.update' },
+      },
+      // Documentos: templates com variáveis ({{Cliente.name}}) que viram PDF ao emitir.
+      {
+        path: 'document',
+        name: 'DocumentList',
+        component: DocumentList,
+        meta: {
+          permission: 'documents.view',
+          menu: {
+            label: 'Documentos',
+            icon: 'fa-solid fa-file-lines',
+            description: 'Templates de documento com variáveis, emitidos em PDF',
+            keywords: ['contrato', 'proposta', 'orçamento', 'template', 'modelo', 'pdf', 'emitir', 'variáveis'],
+            module: 'Documentos',
+            order: 25,
+          },
+        },
+      },
+      {
+        path: 'document/form',
+        name: 'DocumentCreate',
+        component: DocumentEditor,
+        meta: {
+          permission: 'documents.create',
+          menu: {
+            label: 'Novo documento',
+            icon: 'fa-solid fa-file-circle-plus',
+            description: 'Criar um template de documento',
+            keywords: ['criar', 'contrato', 'proposta', 'modelo', 'editor'],
+            module: 'Documentos',
+            order: 26,
+            sidebar: false,
+          },
+        },
+      },
+      {
+        path: 'document/form/:id',
+        name: 'DocumentEdit',
+        component: DocumentEditor,
+        props: true,
+        meta: { permission: 'documents.update' },
       },
       // Financeiro: meta.menu.group nests these under "Financeiro" in the sidebar.
       {

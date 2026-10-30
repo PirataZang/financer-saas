@@ -527,3 +527,32 @@ nunca movê-lo — sem cobrança, estorno, boleto ou transferência a partir do 
   **Personalizar**: cada usuário esconde gráficos (`preferences.dashboard_hidden_charts`); um gráfico que sobra
   sozinho numa linha ocupa a linha inteira.
 
+## 18. Documentos (templates com variáveis)
+
+Menu **Documentos** (`documents.*`: `view`, `create`, `update`, `delete`, `emit`). Portado do peppercore-admin: o usuário
+escreve o documento num editor de folha A4 com toolbar e insere **variáveis** `{{Grupo.campo}}`; ao **emitir**, elas são
+preenchidas com os dados do cliente/projeto escolhidos e sai um PDF.
+
+- **Dados** — tabela `documents` (por empresa): `name`, `subject`, `description` (até 25), `active`, `content` (HTML).
+  Só documentos **ativos** podem ser emitidos.
+- **Editor** (`pages/document/DocumentEditor.vue`) — `contenteditable` + `document.execCommand` (desfazer/refazer, estilo,
+  negrito/itálico/sublinhado/tachado, cores, alinhamento, listas, recuo, link, linha, limpar formatação). As variáveis ficam
+  num **painel à esquerda** da folha (sticky, com rolagem própria), agrupadas por categoria (Cliente, Projeto, Empresa,
+  Geral), fechados por padrão (abrem com um clique) e com busca sem acento; clicar insere `{{Cliente.name}}` no cursor (`@mousedown.prevent` mantém a
+  seleção; `saveSelection`/`restoreSelection` devolvem o cursor ao ponto salvo). No celular o painel vem acima da folha. No texto, cada variável aparece como **pill** colorida por grupo com o nome legível
+  ("Cliente - Nome"), mas é salva como o texto `{{Cliente.name}}`: `decorate()` troca as chaves por pills ao carregar e
+  `serialize()` desfaz ao salvar, então backend, sanitização e emissão não sabem de pills. Contador de folhas e linhas de quebra A4 são só guia visual.
+- **Variáveis** — fonte única: `DocumentService::VARIABLES` (chave => rótulo), servida por `GET /documents/variables` ao
+  editor (diferente do original, que espelhava a lista no front). Grupos: `Cliente.*` (nome, e-mail, telefone, endereço
+  completo e partes), `Projeto.*` (nome, descrição, situação, início, prazo), `Empresa.*` (razão social, fantasia,
+  CPF/CNPJ, endereço), `Valor` (informado na emissão) e `Data` (hoje). Variável nova = uma linha lá + seu valor em
+  `DocumentService::variables()`.
+- **Emissão** — `GET /documents/{id}/emit?customer_id=&project_id=&value=` devolve o PDF (dompdf, A4). Valores são
+  escapados (nunca viram HTML). Variável **sem dado** (ex.: `{{Cliente.name}}` sem cliente escolhido) interrompe com 422
+  listando o que falta, em vez de imprimir o texto cru (o original deixava a chave no PDF).
+- **Segurança** — o HTML é sanitizado ao salvar (HTMLPurifier, só o que a toolbar produz: sem `script`, sem `on*`, sem
+  `javascript:`), porque volta ao navegador via `v-html` e ao dompdf. Cliente/projeto da emissão são validados dentro da
+  empresa. Imagens coladas ficam em base64 (`data:`); imagens remotas não são carregadas pelo dompdf.
+- **Para estender** — outras entidades (ex.: uma cobrança ou transação) = novo grupo em `VARIABLES`, o parâmetro na
+  `emitRules()` e o seletor no modal de emissão.
+
