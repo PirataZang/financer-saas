@@ -1,5 +1,6 @@
 import { isCompanyInactive, useAuthStore } from '@/stores/auth'
 import { usePortalStore } from '@/stores/portal'
+import { download } from '@/utils/export'
 
 // Base de todas as chamadas à API. Vem de VITE_API_URL no .env da raiz:
 // local http://localhost:8000/api (backend direto), VPS /peppercore-admin/api (rota do Nginx).
@@ -13,7 +14,8 @@ export async function apiFetch(url, options = {}) {
     ...(options.headers || {}),
   }
 
-  if (!headers['Content-Type'] && options.body) {
+  // FormData: o navegador define o Content-Type com o boundary.
+  if (!headers['Content-Type'] && options.body && !(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json'
   }
 
@@ -38,6 +40,13 @@ export async function apiFetch(url, options = {}) {
   }
 
   return response
+}
+
+// Baixa um arquivo gerado pela API (precisa do token, então não dá para ser um <a href>).
+export async function downloadFile(url, filename) {
+  const response = await apiFetch(url)
+  if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || 'Não foi possível baixar o arquivo.')
+  download(await response.blob(), filename)
 }
 
 // Portal do cliente: its own session (a customer's, never a user's), so both can be open in one browser.

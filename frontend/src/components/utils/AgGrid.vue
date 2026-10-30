@@ -2,7 +2,7 @@
     <div class="grid-wrapper ag-theme-quartz" :class="{ 'auto-height': isAutoHeight }">
         <AgGridVue class="grid" theme="legacy" :rowData="rowData" :columnDefs="columnDefs" :columnTypes="columnTypes"
             :defaultColDef="defaultColDef" :localeText="localeText" :rowSelection="rowSelectionConfig"
-            :context="context" :domLayout="domLayout" :rowHeight="rowHeight" @grid-ready="onGridReady" @selection-changed="onSelectionChanged"
+            :context="context" :domLayout="domLayout" :rowHeight="rowHeight" singleClickEdit :stopEditingWhenCellsLoseFocus="true" :tooltipShowDelay="300" @cell-value-changed="emit('cell-edit', $event)" @grid-ready="onGridReady" @selection-changed="onSelectionChanged"
             @row-clicked="onRowClicked" @row-double-clicked="onRowDoubleClicked" />
 
         <!-- Painel de Paginação Premium Customizado -->
@@ -93,7 +93,7 @@
 <script setup>
 import { ref, computed, h, defineComponent, markRaw } from 'vue'
 import { AgGridVue } from 'ag-grid-vue3'
-import { ModuleRegistry, ClientSideRowModelModule, ColumnApiModule, CellApiModule, CellStyleModule, RowSelectionModule, TextFilterModule, NumberFilterModule, DateFilterModule, LocaleModule, ValidationModule } from 'ag-grid-community'
+import { ModuleRegistry, ClientSideRowModelModule, ColumnApiModule, CellApiModule, CellStyleModule, RowSelectionModule, TextEditorModule, TooltipModule, TextFilterModule, NumberFilterModule, DateFilterModule, LocaleModule, ValidationModule } from 'ag-grid-community'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
 import Modal from '@/components/utils/Modal.vue'
 import Button from '@/components/utils/Button.vue'
@@ -107,7 +107,7 @@ import 'ag-grid-community/styles/ag-theme-quartz.css'
 /* ===============================
    REGISTRO DOS MÓDULOS
 ================================ */
-ModuleRegistry.registerModules([ClientSideRowModelModule, ColumnApiModule, CellApiModule, CellStyleModule, RowSelectionModule, TextFilterModule, NumberFilterModule, DateFilterModule, LocaleModule, ValidationModule])
+ModuleRegistry.registerModules([ClientSideRowModelModule, ColumnApiModule, CellApiModule, CellStyleModule, RowSelectionModule, TextEditorModule, TooltipModule, TextFilterModule, NumberFilterModule, DateFilterModule, LocaleModule, ValidationModule])
 
 /* ===============================
    PROPS
@@ -130,7 +130,7 @@ const props = defineProps({
 /* ===============================
    EMITS
 ================================ */
-const emit = defineEmits(['update:selection', 'update:page', 'update:pageSize', 'row-click', 'row-dblclick'])
+const emit = defineEmits(['update:selection', 'update:page', 'update:pageSize', 'row-click', 'row-dblclick', 'cell-edit'])
 
 /* ===============================
    GRID API
