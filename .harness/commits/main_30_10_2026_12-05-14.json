@@ -1,0 +1,35 @@
+{
+  "branch": "main",
+  "created_at": "2026-10-30T15:05:14.142Z",
+  "author": {
+    "name": "Igor Fronza",
+    "email": "igorfronza20@gmail.com"
+  },
+  "parent": "ab459de48ef1853dc18f71a78316bab6e618fd59",
+  "notes": null,
+  "stats": {
+    "files": 3,
+    "additions": 324,
+    "deletions": 6
+  },
+  "files": [
+    {
+      "status": "M",
+      "path": "frontend/src/components/utils/AgGrid.vue",
+      "additions": 219,
+      "deletions": 6
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/utils/export.js",
+      "additions": 88,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/utils/export.test.js",
+      "additions": 17,
+      "deletions": 0
+    }
+  ]
+}
