@@ -9,6 +9,7 @@ use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GoalController;
+use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\Portal\PortalController;
 use App\Http\Controllers\ProjectController;
@@ -156,6 +157,15 @@ Route::middleware(['auth', 'company', 'permission'])->group(function () {
         Route::put('/telegram/accounts/{id}', [SettingsController::class, 'updateTelegramAccount']);
         Route::delete('/telegram/accounts/{id}', [SettingsController::class, 'removeTelegramAccount']);
         Route::put('/preferences', [SettingsController::class, 'updatePreferences']);
+    });
+
+    // Configurações › Integrações. {provider} = App\Enums\IntegrationProvider value (mercado_pago).
+    Route::prefix('integrations')->group(function () {
+        Route::get('/', [IntegrationController::class, 'list']);
+        Route::post('/{provider}/connect', [IntegrationController::class, 'connect'])->middleware('throttle:integration-connect');
+        Route::put('/{provider}', [IntegrationController::class, 'update']);
+        Route::post('/{provider}/sync', [IntegrationController::class, 'sync'])->middleware('throttle:integration-sync');
+        Route::delete('/{provider}', [IntegrationController::class, 'delete']);
     });
 
     Route::get('/zip-codes/{zipCode}', [ZipCodeController::class, 'show']);

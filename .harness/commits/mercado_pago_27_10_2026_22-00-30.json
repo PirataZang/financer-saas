@@ -1,0 +1,316 @@
+{
+  "branch": "mercado_pago",
+  "created_at": "2026-10-28T01:00:30.349Z",
+  "author": {
+    "name": "Igor Fronza",
+    "email": "igorfronza20@gmail.com"
+  },
+  "parent": "c33486ba3f5f1f827f2ddbb1b02e42a2bfd7fadf",
+  "notes": null,
+  "stats": {
+    "files": 49,
+    "additions": 2975,
+    "deletions": 36
+  },
+  "files": [
+    {
+      "status": "M",
+      "path": ".env.example",
+      "additions": 1,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "CHANGELOG.md",
+      "additions": 20,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "README.md",
+      "additions": 11,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/Dockerfile",
+      "additions": 2,
+      "deletions": 1
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Console/Commands/IntegrationSyncCommand.php",
+      "additions": 41,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Enums/IntegrationProvider.php",
+      "additions": 19,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Enums/TransactionSource.php",
+      "additions": 5,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/IntegrationController.php",
+      "additions": 97,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Http/Controllers/TransactionController.php",
+      "additions": 10,
+      "deletions": 5
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Http/Middleware/SecurityHeaders.php",
+      "additions": 30,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Models/Integration.php",
+      "additions": 39,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Models/MercadoPagoPayment.php",
+      "additions": 27,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/CategoryService.php",
+      "additions": 13,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/FinanceDashboardService.php",
+      "additions": 19,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/MercadoPagoClient.php",
+      "additions": 84,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/MercadoPagoService.php",
+      "additions": 577,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/SettingsService.php",
+      "additions": 6,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/TransactionService.php",
+      "additions": 20,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "backend/bootstrap/app.php",
+      "additions": 6,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/config/permissions.php",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/config/rate-limit.php",
+      "additions": 12,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/config/services.php",
+      "additions": 6,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/database/migrations/0001_01_01_000011_create_integrations_tables.php",
+      "additions": 100,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/database/migrations/0001_01_01_000012_add_payouts_cursor_to_integrations.php",
+      "additions": 23,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/routes/api.php",
+      "additions": 10,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Feature/IntegrationTest.php",
+      "additions": 308,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/tests/Feature/SettingsTest.php",
+      "additions": 5,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "design.md",
+      "additions": 64,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "docker-compose.yml",
+      "additions": 33,
+      "deletions": 3
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/assets/integrations/mercado-pago.svg",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/integrations/IntegrationCard.vue",
+      "additions": 289,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/ui/InfoTip.vue",
+      "additions": 200,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/utils/Input.vue",
+      "additions": 8,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/utils/Select.vue",
+      "additions": 8,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/utils/Switch.vue",
+      "additions": 11,
+      "deletions": 2
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/utils/TextArea.vue",
+      "additions": 8,
+      "deletions": 1
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/integrations/catalog.js",
+      "additions": 53,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/finance/CategoryList.vue",
+      "additions": 11,
+      "deletions": 3
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/finance/FinanceDashboard.vue",
+      "additions": 260,
+      "deletions": 4
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/finance/TransactionForm.vue",
+      "additions": 102,
+      "deletions": 5
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/finance/dashboardCharts.js",
+      "additions": 145,
+      "deletions": 3
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/settings/IntegrationsTab.vue",
+      "additions": 241,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/settings/Settings.vue",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/router/index.js",
+      "additions": 3,
+      "deletions": 2
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/styles/_colors.scss",
+      "additions": 11,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/styles/form.scss",
+      "additions": 7,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/styles/main.scss",
+      "additions": 8,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/utils/date.js",
+      "additions": 9,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/utils/date.test.js",
+      "additions": 9,
+      "deletions": 1
+    }
+  ],
+  "branch_history": {
+    "base": "main",
+    "merge_base": "c33486ba3f5f1f827f2ddbb1b02e42a2bfd7fadf",
+    "previous_commits": []
+  }
+}

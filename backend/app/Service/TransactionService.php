@@ -50,7 +50,14 @@ class TransactionService
 
     public function index(int $id): Transaction
     {
-        return Transaction::with('category:id,name,icon,color')->findOrFail($id);
+        $transaction = Transaction::with('category:id,name,icon,color')->findOrFail($id);
+
+        // Entries an integration brought carry its own facts, shown locked on the edit screen.
+        if ($transaction->source === TransactionSource::MercadoPago) {
+            $transaction->setAttribute('integration', app(MercadoPagoService::class)->details($transaction));
+        }
+
+        return $transaction;
     }
 
     /**
@@ -112,7 +119,9 @@ class TransactionService
      */
     public function setStatus(array $ids, TransactionStatus $status): int
     {
+        // An integration's entries follow the provider (the next sync would undo the change).
         return DB::transaction(fn () => Transaction::whereIn('id', $ids)
+            ->where('source', '!=', TransactionSource::MercadoPago)
             ->where('status', '!=', $status)
             ->get()
             ->each(fn (Transaction $transaction) => $transaction->update(['status' => $status]))
@@ -122,6 +131,16 @@ class TransactionService
     public function update(int $id, array $data): Transaction
     {
         $transaction = Transaction::findOrFail($id);
+        // Type, amount, date and status of an integration's entry belong to the provider: the next sync
+        // would overwrite them. Description, category and customer stay the user's.
+        if ($transaction->source === TransactionSource::MercadoPago) {
+            $current = ['type' => $transaction->type->value, 'status' => $transaction->status->value, 'date' => $transaction->date, 'amount' => $transaction->amount];
+            foreach ($current as $field => $value) {
+                if (isset($data[$field]) && (string) $data[$field] !== $value && !($field === 'amount' && round((float) $data[$field], 2) === round((float) $value, 2))) {
+                    throw ValidationException::withMessages([$field => ['Este lançamento vem do Mercado Pago: tipo, valor, data e status não podem ser editados.']]);
+                }
+            }
+        }
         $transaction->update($data);
 
         return $transaction->load('category:id,name,icon,color');

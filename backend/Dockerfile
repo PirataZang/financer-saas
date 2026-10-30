@@ -1,4 +1,5 @@
-FROM php:8.3-cli
+# Pinned: 8.3.36 fixes CVE-2026-109618/109619 (memory corruption → RCE). Bump on each security release.
+FROM php:8.3.36-cli
 
 WORKDIR /var/www/html
 

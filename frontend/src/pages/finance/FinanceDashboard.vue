@@ -1,6 +1,7 @@
 <template>
   <div class="page fade-in">
     <PageHeader title="Dashboard Financeiro" :subtitle="subtitle" icon="fa-solid fa-chart-pie">
+      <Button variant="secondary" icon="fa-solid fa-sliders" label="Personalizar" title="Escolher quais gráficos aparecem" @click="openCustomize" />
       <Button
         v-can="'finance.export'"
         variant="secondary"
@@ -61,6 +62,66 @@
         </p>
       </section>
     </div>
+
+    <!-- Mercado Pago (Configurações › Integrações): the account's own figures for the same period. -->
+    <section v-if="mp" class="mp" :class="{ 'is-loading': loading }" aria-labelledby="mp-title">
+      <header class="mp__head">
+        <span class="mp__logo"><img :src="INTEGRATIONS.mercado_pago.logo" alt="" width="26" height="26" /></span>
+        <div class="mp__title">
+          <h3 id="mp-title">Mercado Pago</h3>
+          <p>
+            {{ mp.account.nickname ? `Conta ${mp.account.nickname} · ` : '' }}
+            {{ mp.account.last_synced_at ? `sincronizado ${sinceTime(mp.account.last_synced_at)}` : 'ainda não sincronizado' }}
+            · filtros de categoria, origem e status não se aplicam aqui
+          </p>
+        </div>
+        <Button v-can="'settings.integrations'" type="route" :href="{ name: 'Settings', query: { tab: 'integrations' } }" variant="ghost" size="sm" icon="fa-solid fa-gear" label="Gerenciar" />
+      </header>
+
+      <p v-if="mp.account.last_error" class="mp__error" role="alert">
+        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true" />
+        A última sincronização falhou: {{ mp.account.last_error }}
+      </p>
+
+      <dl class="mp__kpis">
+        <div v-for="kpi in mpKpis" :key="kpi.label">
+          <dt><i :class="kpi.icon" aria-hidden="true" /> {{ kpi.label }}</dt>
+          <dd :class="kpi.tone">{{ formatMoney(kpi.value) }}</dd>
+          <small>{{ kpi.hint }}</small>
+        </div>
+      </dl>
+
+      <div v-if="mpCharts.length" class="chart-grid">
+        <section v-for="chart in mpCharts" :key="chart.key" class="chart-card glass-panel">
+          <h4>{{ chart.title }}</h4>
+          <EChart v-if="chart.option" :option="chart.option" :height="chart.height" />
+          <p v-else class="chart-empty" :style="{ height: chart.height }">
+            <i class="fa-regular fa-folder-open" aria-hidden="true" />
+            {{ chart.empty }}
+          </p>
+        </section>
+      </div>
+    </section>
+
+    <Modal v-model="customizing" title="Personalizar o dashboard" size="sm">
+      <p class="customize__intro">Escolha os gráficos que aparecem para você. Vale em qualquer computador ou celular em que entrar.</p>
+      <fieldset v-for="group in chartGroups" :key="group.key" class="customize__group">
+        <legend>{{ group.label }}</legend>
+        <Switch
+          v-for="chart in group.charts"
+          :key="chart.key"
+          :model-value="!draftHidden.includes(chart.key)"
+          :text-label="chart.title"
+          :aria-label="`Mostrar ${chart.title}`"
+          @change="toggleChart(chart.key, $event)"
+        />
+      </fieldset>
+      <template #footer>
+        <Button variant="ghost" label="Mostrar todos" :disabled="!draftHidden.length" @click="draftHidden = []" />
+        <Button variant="secondary" label="Cancelar" @click="customizing = false" />
+        <Button icon="fa-solid fa-check" label="Salvar" :disabled="savingLayout" @click="saveCustomize" />
+      </template>
+    </Modal>
   </div>
 </template>
 
@@ -72,6 +133,10 @@ import Button from '@/components/utils/Button.vue'
 import Input from '@/components/utils/Input.vue'
 import Select from '@/components/utils/Select.vue'
 import CategorySelect from '@/components/finance/CategorySelect.vue'
+import Modal from '@/components/utils/Modal.vue'
+import Switch from '@/components/utils/Switch.vue'
+import { INTEGRATIONS } from '@/integrations/catalog'
+import { sinceTime } from '@/utils/date'
 import { apiFetch } from '@/services/api'
 import { swal } from '@/plugins/swal'
 import { PERIODS, periodRange } from '@/utils/period'
@@ -115,7 +180,12 @@ const kpis = computed(() => {
   const totals = s?.totals ?? {}
   const kept = totals.income > 0 ? (totals.balance / totals.income) * 100 : null
   return [
-    { label: 'Receitas', icon: 'fa-solid fa-arrow-trend-up', value: totals.income, hint: s && plural(s.counts.income) },
+    {
+      label: 'Receitas',
+      icon: 'fa-solid fa-arrow-trend-up',
+      value: totals.income,
+      hint: s && (mpIncome.value > 0 ? `${plural(s.counts.income)} · ${formatMoney(mpIncome.value)} do Mercado Pago` : plural(s.counts.income)),
+    },
     { label: 'Despesas', icon: 'fa-solid fa-arrow-trend-down', value: totals.expense, hint: s && plural(s.counts.expense) },
     {
       label: 'Resultado do período',
@@ -134,12 +204,69 @@ const kpis = computed(() => {
   ]
 })
 
-const renderedCharts = computed(() => {
+// Charts this user may see and didn't hide (Personalizar → preferences.dashboard_hidden_charts).
+const hidden = computed(() => auth.preferences.dashboard_hidden_charts ?? [])
+const allowedCharts = computed(() => charts.filter((chart) => !chart.permission || auth.can(chart.permission)))
+const build = (group) => {
   const data = { ...summary.value, goals: goals.value }
-  return charts
-    .filter((chart) => !chart.permission || auth.can(chart.permission))
+  const list = allowedCharts.value
+    .filter((chart) => chart.group === group && !hidden.value.includes(chart.key))
     .map((chart) => ({ ...chart, option: chart.option(data), height: chart.height?.(data) ?? '280px' }))
+  // Charts pair up two per row: an odd one out (before a wide chart or at the end) takes the whole
+  // row instead of leaving a hole — hiding charts in Personalizar can create any count.
+  let run = 0
+  list.forEach((chart, i) => {
+    run = chart.wide ? 0 : run + 1
+    const endsRun = i === list.length - 1 || list[i + 1].wide
+    if (!chart.wide && endsRun && run % 2 === 1) chart.wide = true
+  })
+  return list
+}
+const renderedCharts = computed(() => build('general'))
+
+// Mercado Pago panel: present when the integration is connected and on.
+const mp = computed(() => summary.value?.mercado_pago ?? null)
+const mpCharts = computed(() => (mp.value ? build('mercado_pago') : []))
+const mpIncome = computed(() => summary.value?.sources?.find((r) => r.source === 'mercado_pago')?.income ?? 0)
+const mpKpis = computed(() => {
+  const t = mp.value.totals
+  const share = (v) => (t.gross > 0 ? `${((v / t.gross) * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% do bruto` : '')
+  return [
+    { label: 'Recebido (bruto)', icon: 'fa-solid fa-hand-holding-dollar', value: t.gross, hint: `${t.count} pagamento(s) aprovado(s)` },
+    { label: 'Tarifas', icon: 'fa-solid fa-receipt', value: t.fees, hint: share(t.fees) },
+    { label: 'Estornos e contestações', icon: 'fa-solid fa-rotate-left', value: t.refunded, hint: share(t.refunded) },
+    { label: 'Líquido', icon: 'fa-solid fa-wallet', value: t.net, tone: t.net < 0 ? 'is-negative' : '', hint: 'Bruto − tarifas − estornos' },
+    { label: 'Aguardando', icon: 'fa-regular fa-clock', value: t.pending, hint: 'Boletos e Pix ainda não pagos' },
+  ]
 })
+
+// Personalizar: switches per chart, saved to the user's preferences on Salvar.
+const customizing = ref(false)
+const savingLayout = ref(false)
+const draftHidden = ref([])
+const chartGroups = computed(() => [
+  { key: 'general', label: 'Geral', charts: allowedCharts.value.filter((c) => c.group === 'general') },
+  ...(mp.value ? [{ key: 'mercado_pago', label: 'Mercado Pago', charts: allowedCharts.value.filter((c) => c.group === 'mercado_pago') }] : []),
+])
+const openCustomize = () => {
+  draftHidden.value = [...hidden.value]
+  customizing.value = true
+}
+const toggleChart = (key, visible) => {
+  draftHidden.value = visible ? draftHidden.value.filter((k) => k !== key) : [...draftHidden.value, key]
+}
+const saveCustomize = async () => {
+  savingLayout.value = true
+  try {
+    await auth.savePreferences({ dashboard_hidden_charts: draftHidden.value })
+    customizing.value = false
+    swal.toastSuccess('Dashboard personalizado.')
+  } catch (err) {
+    swal.toastError(err.message || 'Não foi possível salvar.')
+  } finally {
+    savingLayout.value = false
+  }
+}
 
 // One query string for the dashboard and the export, so the spreadsheet is exactly what's on screen.
 const query = () => {
@@ -314,6 +441,135 @@ onMounted(async () => {
   font-weight: 700;
   color: var(--color-text);
   margin-bottom: 12px;
+}
+
+.mp {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 8px;
+  transition: opacity 0.18s ease;
+}
+
+.mp__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mp__logo {
+  display: grid;
+  flex: 0 0 40px;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+}
+
+.mp__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.mp__title h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.mp__title p {
+  margin: 2px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.mp__error {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-warning-soft);
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.mp__error i {
+  color: var(--color-warning-text);
+}
+
+/* One strip, not five cards: the panel's figures read as a single statement of the account. */
+.mp__kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  margin: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-bg-card);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.mp__kpis > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  box-shadow: -1px 0 0 var(--color-border), 0 -1px 0 var(--color-border);
+}
+
+.mp__kpis dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.mp__kpis dd {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.mp__kpis dd.is-negative {
+  color: var(--color-danger);
+}
+
+.mp__kpis small {
+  min-height: 1.1em;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.customize__intro {
+  margin: 0 0 16px;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.customize__group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 0;
+  border: 0;
+}
+
+.customize__group legend {
+  margin-bottom: 10px;
+  padding: 0;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .chart-empty {

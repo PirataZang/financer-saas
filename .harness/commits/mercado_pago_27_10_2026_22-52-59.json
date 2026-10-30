@@ -1,0 +1,136 @@
+{
+  "branch": "mercado_pago",
+  "created_at": "2026-10-28T01:52:59.007Z",
+  "author": {
+    "name": "Igor Fronza",
+    "email": "igorfronza20@gmail.com"
+  },
+  "parent": "c3dac29bd1c6341f26943241ed13649584a50647",
+  "notes": null,
+  "stats": {
+    "files": 18,
+    "additions": 634,
+    "deletions": 116
+  },
+  "files": [
+    {
+      "status": "M",
+      "path": "CHANGELOG.md",
+      "additions": 3,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "README.md",
+      "additions": 1,
+      "deletions": 1
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Console/Commands/IntegrationReportCommand.php",
+      "additions": 28,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Console/Commands/IntegrationSyncCommand.php",
+      "additions": 10,
+      "deletions": 20
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Http/Controllers/IntegrationController.php",
+      "additions": 8,
+      "deletions": 1
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Jobs/RequestIntegrationReport.php",
+      "additions": 35,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Jobs/SyncIntegration.php",
+      "additions": 48,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Models/Integration.php",
+      "additions": 19,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/MercadoPagoService.php",
+      "additions": 37,
+      "deletions": 5
+    },
+    {
+      "status": "M",
+      "path": "backend/bootstrap/app.php",
+      "additions": 5,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/tests/Feature/IntegrationTest.php",
+      "additions": 59,
+      "deletions": 4
+    },
+    {
+      "status": "M",
+      "path": "design.md",
+      "additions": 7,
+      "deletions": 3
+    },
+    {
+      "status": "M",
+      "path": "docker-compose.yml",
+      "additions": 30,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/integrations/IntegrationCard.vue",
+      "additions": 32,
+      "deletions": 75
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/ui/InfoTip.vue",
+      "additions": 30,
+      "deletions": 2
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/integrations/catalog.js",
+      "additions": 9,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/settings/IntegrationsTab.vue",
+      "additions": 5,
+      "deletions": 2
+    },
+    {
+      "status": "A",
+      "path": "mercadopago.md",
+      "additions": 268,
+      "deletions": 0
+    }
+  ],
+  "branch_history": {
+    "base": "main",
+    "merge_base": "c33486ba3f5f1f827f2ddbb1b02e42a2bfd7fadf",
+    "previous_commits": [
+      {
+        "hash": "c3dac29bd1c6341f26943241ed13649584a50647",
+        "subject": "Add Mercado Pago integration with sync, dashboard panel and field tips",
+        "committed_at": "2026-10-27T22:00:30-03:00"
+      }
+    ]
+  }
+}

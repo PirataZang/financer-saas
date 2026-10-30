@@ -16,6 +16,8 @@ enum TransactionSource: string
     case Telegram = 'telegram';
     case Import = 'import';
     case OpenFinance = 'open_finance';
+    // Configurações › Integrações (read-only sync, App\Service\MercadoPagoService).
+    case MercadoPago = 'mercado_pago';
 
     public function label(): string
     {
@@ -24,6 +26,7 @@ enum TransactionSource: string
             self::Telegram => 'Telegram',
             self::Import => 'Importação',
             self::OpenFinance => 'Open Finance',
+            self::MercadoPago => 'Mercado Pago',
         };
     }
 
@@ -34,6 +37,7 @@ enum TransactionSource: string
             self::Telegram => 'info',
             self::Import => 'neutral',
             self::OpenFinance => 'info',
+            self::MercadoPago => 'info',
         };
     }
 
@@ -44,6 +48,7 @@ enum TransactionSource: string
             self::Telegram => 'fa-brands fa-telegram',
             self::Import => 'fa-solid fa-file-import',
             self::OpenFinance => 'fa-solid fa-building-columns',
+            self::MercadoPago => 'fa-solid fa-handshake',
         };
     }
 }

@@ -2,7 +2,9 @@ import { formatMoney } from '@/utils/money'
 
 // Finance dashboard charts. Each entry turns the /finance/dashboard payload into an ECharts
 // option (or null = "sem dados"). New chart = new entry here; FinanceDashboard.vue renders the list.
-//   { key, title, wide?, permission?, empty?, height?(summary), option(summary) }
+//   { key, title, group, wide?, permission?, empty?, height?(summary), option(summary) }
+// group: 'general' (main grid) or 'mercado_pago' (integration panel, only when connected).
+// Every key can be hidden per user (Personalizar → preferences.dashboard_hidden_charts).
 // One question per chart: flow over time, balance over time, where money comes from, where it goes,
 // how the goals are doing. `summary.goals` is GET /finance/goals (own periods, ignores the filters).
 
@@ -20,7 +22,85 @@ const colors = () => ({
   surface: cssVar('--color-bg-card'),
   warning: cssVar('--color-warning'),
   danger: cssVar('--color-danger'),
+  neutral: cssVar('--color-text-faint'),
+  chart: (n) => cssVar(`--color-chart-${n}`),
 })
+
+// Color follows the entity, never its rank (a filter must not repaint the survivors).
+const METHOD_SLOT = { credit_card: 1, account_money: 2, pix: 3, ticket: 4, prepaid_card: 5, atm: 6, debit_card: 7 }
+const SOURCE_SLOT = { manual: 1, mercado_pago: 3, telegram: 7, import: 5, open_finance: 6 }
+const methodColor = (c, key) => (METHOD_SLOT[key] ? c.chart(METHOD_SLOT[key]) : c.neutral)
+const toneColor = (c, tone) => ({ success: c.income, warning: c.warning, danger: c.danger }[tone] ?? c.neutral)
+
+// Donut: share of a whole. Slices keep a 2px surface gap; the legend carries name, value and share
+// (identity is never color alone — chart tokens 3–5 are < 3:1 on white), the hole carries the total.
+//   rows: [{ name, value, color, count? }]  ·  money: values are R$ (else counts)
+const donut = (rows, { money = true, totalLabel = 'Total' } = {}) => {
+  const data = rows.filter((r) => r.value > 0)
+  if (!data.length) return null
+  const c = colors()
+  const total = data.reduce((sum, r) => sum + r.value, 0)
+  const fmt = (v) => (money ? formatMoney(v) : v.toLocaleString('pt-BR'))
+  const share = (v) => percent((v / total) * 100)
+  const byName = Object.fromEntries(data.map((r) => [r.name, r]))
+  // Wide card: donut left, legend right. Narrow (phone): donut on top, legend below.
+  return {
+    baseOption: {
+      tooltip: {
+        trigger: 'item',
+        formatter: (p) => `${p.marker}${p.name}<br/><b>${fmt(p.value)}</b> · ${share(p.value)}${p.data.count != null && money ? ` · ${p.data.count} pagamento(s)` : ''}`,
+      },
+      legend: {
+        orient: 'vertical',
+        right: 0,
+        top: 'middle',
+        icon: 'circle',
+        itemWidth: 10,
+        itemHeight: 10,
+        itemGap: 12,
+        textStyle: { color: c.text, rich: { v: { color: c.axis, padding: [0, 0, 0, 4] } } },
+        formatter: (name) => `${name}  {v|${share(byName[name].value)}}`,
+      },
+      title: {
+        text: fmt(total),
+        subtext: totalLabel,
+        left: '28%',
+        top: '50%',
+        textAlign: 'center',
+        textVerticalAlign: 'middle',
+        itemGap: 2,
+        textStyle: { color: c.text, fontSize: 14, fontWeight: 700 },
+        subtextStyle: { color: c.axis, fontSize: 12 },
+      },
+      series: [{
+        type: 'pie',
+        radius: ['56%', '80%'],
+        center: ['28%', '50%'],
+        label: { show: false },
+        labelLine: { show: false },
+        itemStyle: { borderColor: c.surface, borderWidth: 2, borderRadius: 4 },
+        emphasis: { scaleSize: 4 },
+        data: data.map((r) => ({ name: r.name, value: r.value, count: r.count, itemStyle: { color: r.color } })),
+      }],
+    },
+    media: [{
+      // Full-row card: keep donut and legend together instead of at opposite edges.
+      query: { minWidth: 700 },
+      option: {
+        legend: { left: '52%', right: 'auto' },
+        title: { left: '34%' },
+        series: [{ center: ['34%', '50%'] }],
+      },
+    }, {
+      query: { maxWidth: 440 },
+      option: {
+        legend: { orient: 'horizontal', left: 'center', right: 'auto', top: 'auto', bottom: 0 },
+        title: { left: '50%', top: '38%' },
+        series: [{ center: ['50%', '38%'], radius: ['44%', '66%'] }],
+      },
+    }],
+  }
+}
 
 const expenseTexture = { symbol: 'rect', symbolSize: 1, dashArrayX: [1, 0], dashArrayY: [2, 4], rotation: -Math.PI / 4, color: 'rgba(255,255,255,0.45)' }
 
@@ -133,6 +213,7 @@ const goalBars = (goals) => {
 export const charts = [
   {
     key: 'flow',
+    group: 'general',
     title: 'Receitas x despesas',
     option: (s) => {
       if (!s.timeline.some((p) => p.income || p.expense)) return null
@@ -150,6 +231,7 @@ export const charts = [
   },
   {
     key: 'balance',
+    group: 'general',
     title: 'Evolução do saldo',
     option: (s) => {
       const c = colors()
@@ -170,15 +252,75 @@ export const charts = [
       }
     },
   },
-  { key: 'expense-categories', title: 'Despesas por categoria', height: (s) => categoryHeight(s.categories.expense), option: (s) => categoryBars(s.categories.expense) },
-  { key: 'income-categories', title: 'Receitas por categoria', height: (s) => categoryHeight(s.categories.income), option: (s) => categoryBars(s.categories.income) },
+  {
+    key: 'sources',
+    height: () => '300px',
+    group: 'general',
+    title: 'Receitas por origem',
+    empty: 'Só há receitas de uma origem neste período.',
+    option: (s) => {
+      const c = colors()
+      const rows = (s.sources ?? []).map((r) => ({ name: r.label, value: r.income, color: SOURCE_SLOT[r.source] ? c.chart(SOURCE_SLOT[r.source]) : c.neutral }))
+      // One slice says nothing a KPI doesn't: only when there is a real split.
+      return rows.filter((r) => r.value > 0).length > 1 ? donut(rows) : null
+    },
+  },
+  { key: 'expense-categories', group: 'general', title: 'Despesas por categoria', height: (s) => categoryHeight(s.categories.expense), option: (s) => categoryBars(s.categories.expense) },
+  { key: 'income-categories', group: 'general', title: 'Receitas por categoria', height: (s) => categoryHeight(s.categories.income), option: (s) => categoryBars(s.categories.income) },
   {
     key: 'goals',
+    group: 'general',
     title: 'Metas',
     wide: true,
     permission: 'finance.goal.view',
     empty: 'Nenhuma meta cadastrada. Crie uma em Financeiro › Metas.',
     height: (s) => categoryHeight(s.goals ?? []),
     option: (s) => goalBars(s.goals),
+  },
+  // Mercado Pago panel (summary.mercado_pago, GET /finance/dashboard): the account's own figures.
+  {
+    key: 'mp-methods',
+    height: () => '300px',
+    group: 'mercado_pago',
+    title: 'Recebido por meio de pagamento',
+    empty: 'Nenhum pagamento recebido neste período.',
+    option: (s) => {
+      const c = colors()
+      return donut(s.mercado_pago.methods.map((m) => ({ name: m.label, value: m.total, count: m.count, color: methodColor(c, m.key) })), { totalLabel: 'Recebido' })
+    },
+  },
+  {
+    key: 'mp-composition',
+    height: () => '300px',
+    group: 'mercado_pago',
+    title: 'Para onde foi o valor recebido',
+    empty: 'Nenhum pagamento recebido neste período.',
+    option: (s) => {
+      const c = colors()
+      const tone = { net: c.income, fees: c.neutral, refunded: c.danger }
+      return donut(s.mercado_pago.composition.map((r) => ({ name: r.label, value: r.total, color: tone[r.key] })), { totalLabel: 'Bruto' })
+    },
+  },
+  {
+    key: 'mp-status',
+    height: () => '300px',
+    group: 'mercado_pago',
+    title: 'Status dos pagamentos',
+    empty: 'Nenhum pagamento neste período.',
+    option: (s) => {
+      const c = colors()
+      return donut(s.mercado_pago.statuses.map((r) => ({ name: r.label, value: r.count, color: toneColor(c, r.tone) })), { money: false, totalLabel: 'Pagamentos' })
+    },
+  },
+  {
+    key: 'mp-purchases',
+    height: () => '300px',
+    group: 'mercado_pago',
+    title: 'Pagamentos feitos pela conta',
+    empty: 'A conta não pagou nada pelo Mercado Pago neste período.',
+    option: (s) => {
+      const c = colors()
+      return donut(s.mercado_pago.purchases.map((m) => ({ name: m.label, value: m.total, count: m.count, color: methodColor(c, m.key) })), { totalLabel: 'Pago' })
+    },
   },
 ]

@@ -8,7 +8,7 @@ padrão do peppercore-admin — mantenha este arquivo atualizado conforme o proj
 
 - **Frontend**: Vue 3 (Composition API, `<script setup>`), Vue Router 4, Pinia, Vite, SCSS + Tailwind,
   AG Grid, ECharts, Font Awesome, SweetAlert2.
-- **Backend**: Laravel 13 (PHP 8.3), PostgreSQL, Redis (cache/sessão/fila), auth via bearer token
+- **Backend**: Laravel 13 (PHP 8.3, imagem fixada em `php:8.3.36-cli` — suba a cada release de segurança), PostgreSQL, Redis (cache/sessão/fila), auth via bearer token
   custom (`AuthMiddleware`), auditoria via `spatie/laravel-activitylog`.
 
 ## 1. Design tokens
@@ -68,6 +68,14 @@ Reutilize antes de criar algo novo (`frontend/src/components/utils/` e `ui/`):
   de uma categoria financeira) e `icon` (classe Font Awesome ou emoji). O enum no backend define
   `color()`/`icon()` (ex. `CustomerStatus`); vermelho (`danger`) só para estados de erro/destrutivos.
 - **Campo booleano** (ativo/inativo, sim/não) sempre usa `Switch` — nunca checkbox nativo.
+- **Dica de campo (InfoTip)** (`ui/InfoTip.vue`) — o ⓘ ao lado do rótulo: passar o mouse, focar ou tocar mostra o
+  nome do campo e o que ele faz. Em formulário use a prop `tip` (`Input`, `Select`, `TextArea`, `Switch`):
+  `<Input v-model="x" label="Importar desde" tip="Dia a partir do qual..." />`. O ⓘ fica fora do `<label>` (não
+  entra no nome acessível do campo); o balão é teleportado e `fixed`, então modal/card não cortam. Texto: o que é +
+  o que acontece, em 1–3 frases. Não use para repetir o rótulo nem para avisos (isso é `field-hint`).
+- **Cores de gráfico** — `--color-chart-1..7` (`_colors.scss`): identidade categórica (meio de pagamento, origem),
+  ordem fixa e cor presa à entidade (nunca ao ranking). Validadas para daltonismo; 3, 4 e 5 ficam abaixo de 3:1 no
+  branco, então gráfico com elas sempre tem legenda/rótulo. Significado de status continua nos tokens de status.
 - **Listagens** — estrutura `.list-toolbar` (`__filters` + `__actions`) + `.grid-wrap` com o `AgGrid`; estilos
   globais em `styles/list.scss` (não copie para o `<style>` da página).
 - **Endereço por CEP** — `useZipCodeLookup(form, numberInput)` de `services/zipCode.js` (busca ao 8º dígito ou
@@ -424,6 +432,7 @@ permissão). Backend: `SettingsController` + `SettingsService` (dono das chaves,
   fuso horário do bot.
 - **Telegram** — código/link de vínculo (gerar, gerar novo, revogar) e contas vinculadas (revogar, reativar, remover).
 - **Portal do cliente** — link do portal (copiar/abrir) e dados de pagamento (chave PIX, instruções) — seção 16.
+- **Integrações** — um card por provedor (Mercado Pago hoje) — seção 17.
 - **Preferências** — menu aberto ou só ícones (o botão do topo grava a mesma preferência), densidade das tabelas
   (`AgGrid` usa linha de 34px na compacta) e página inicial (só telas que o usuário acessa; senão o 1º item do menu).
 
@@ -460,3 +469,61 @@ avisos. Mobile first. O cliente nunca altera nada — as rotas do portal são to
   compartilhados (`.p-card`, `.p-section`, `.p-progress`, `.p-state`) no `<style>` global do layout.
 - **E-mail** — produção precisa de `MAIL_*` (SMTP) no `.env` do backend; com `MAIL_MAILER=log` o código sai em
   `storage/logs/laravel.log`.
+
+## 17. Integrações (Mercado Pago)
+
+Configurações › Integrações (`settings.integrations`). Opcional e **só leitura**: monitorar o dinheiro da conta,
+nunca movê-lo — sem cobrança, estorno, boleto ou transferência a partir do sistema.
+
+- **Catálogo** — backend: `App\Enums\IntegrationProvider` + o serviço do provedor (`IntegrationController`
+  despacha por `match`); front: `frontend/src/integrations/catalog.js` (nome, logo, o que faz, limites, campos do
+  "Editar" com `tip`). Integração nova = caso no enum + serviço + entrada no catálogo; o card (`IntegrationCard`)
+  e a aba já servem. Tabela `integrations` (uma por empresa e provedor): `credentials` criptografado
+  (`encrypted:array`, depende do `APP_KEY`) e protegido (`#[ProtectedColumns]`), `account` (quem conectou),
+  `settings`, `sync_cursor`, `last_error`.
+- **Leitura garantida no código** — `MercadoPagoClient` é a única porta para a API: só `GET`, só para os caminhos em
+  `READ_PATHS` (o token colado pela empresa pode mais que ler, então essa trava é a garantia); a única escrita é pedir o relatório "Liberações" (gera um arquivo, não mexe em dinheiro). Leitura nova = caminho novo na lista, nunca escrita.
+  `IntegrationTest` falha se sair qualquer requisição que não seja GET (fora esse relatório).
+- **Conexão** — cada empresa cola o **Access Token** da própria conta (Mercado Pago Developers › aplicação ›
+  Credenciais de produção). `POST /integrations/mercado_pago/connect` `{access_token}` valida o token em `/users/me`,
+  guarda em `integrations.credentials` (criptografado, **não** hash/bcrypt: precisa ser lido de volta para chamar a
+  API; a resposta nunca devolve o token) e já sincroniza. Sem `.env`, sem aplicação da plataforma, sem OAuth. Uma
+  empresa não troca de conta sem remover a integração. Token revogado/vencido → o card mostra o erro e pede para
+  conectar de novo.
+- **Jobs** — o `scheduler` só **enfileira**; o container `queue` (`queue:work`, reinicia a cada hora para pegar deploy)
+  executa `App\Jobs\SyncIntegration` (um por integração, `ShouldBeUnique`) e `App\Jobs\RequestIntegrationReport`
+  (pede o relatório e agenda a leitura 90 s depois). Falha de uma empresa não atrasa as outras; jobs que quebram
+  vão para `failed_jobs`. Processo novo = novo job em `app/Jobs` + uma linha em `bootstrap/app.php`.
+- **Sincronização** (`MercadoPagoService::sync`) — a cada 30 min pelo container `scheduler`
+  (`integrations:sync`, que enfileira) e no botão "Sincronizar agora" (`throttle:integration-sync`). Busca `/v1/payments/search`
+  por `date_last_updated` a partir do cursor (1ª vez: `settings.import_from` ou 90 dias), até 2000 por execução,
+  com lock por integração e sem gravar auditoria. Cada pagamento é espelhado em `mercado_pago_payments` e vira
+  transações `source = mercado_pago` idempotentes (`external_id` = `<id>`, `<id>:fee`, `<id>:refund`): recebido =
+  receita (efetivada se aprovado/estornado/contestado, pendente se aguardando e `settings.pending`), tarifa =
+  despesa (`settings.fees`), estorno/chargeback = despesa; pago pela conta = despesa em Compras. Valor, status e
+  data seguem o Mercado Pago; descrição e categoria ficam como o usuário deixou; lançamento excluído não volta.
+- **Pix enviados e transferências** (`pullTransfers`, opt-in: `settings.transfers`, desligado por padrão) — não são "pagamentos" para `/v1/payments/search`; só existem no
+  relatório **Liberações** (`/v1/account/release_report`). A cada sync o sistema lê os relatórios prontos (linhas
+  `payout` viram despesa em "Transferências · Mercado Pago", `external_id = payout:<id>`) e pede o próximo
+  (`integrations:report` (agendado às 08:00, 15:00 e 20:00 de São Paulo em `bootstrap/app.php`, sem cron externo: roda no container `scheduler`) pede o relatório, porque cada pedido cria um arquivo na conta e avisa o dono; o botão "Sincronizar agora" também pede um (1 por vez, 3 min) e o card avisa para sincronizar de novo em ~1 min; o `integrations:sync` de 30 min só lê o que está pronto; a partir de 1 dia antes do último lido; fica pronto em ~1 min; mas o Mercado Pago demora para listar movimentos recentes nele: o R$ 1 enviado às 21:30 não estava no relatório gerado às 21:52, e não existe webhook para Pix enviado). O cursor é
+  `integrations.payouts_cursor`. Falha aqui vai para o card (`last_error`) sem desfazer os pagamentos. Retiradas para o
+  próprio banco, rendimentos (`asset_management`) e Pix **recebidos** por transferência não são lidos por esse caminho.
+- **Compras da conta** — para o que a conta pagou como compradora a busca esconde `collector_id` e `payer`; não ser o
+  recebedor basta para tratar como saída.
+- **Lançamento de integração na edição** — `GET /finance/transactions/{id}` devolve `integration` (`MercadoPagoService::details`:
+  fatos do pagamento espelhado, como label/value/format) e o `TransactionForm` mostra a seção bloqueada "Dados do Mercado
+  Pago" e desabilita tipo, valor, data e status. A trava também vale na API (`TransactionService::update` → 422 e
+  `setStatus` ignora): o sync é dono desses campos; descrição, categoria e cliente são do usuário.
+- **O que a API não traz** — compras com o cartão do Mercado Pago não aparecem nessa API
+  (exigiriam Open Finance via agregador, ex. Pluggy). Saques entre MP e banco não são receita nem despesa.
+- **Categorias da integração** — `finance_categories.integration_key` (`mercado_pago:sales|fees|refunds|purchases`):
+  criadas sob demanda, encontradas pela chave mesmo renomeadas; na lista aparecem com o selo "Integração ·
+  Mercado Pago" e não podem ser excluídas, desativadas nem mudar de tipo (`CategoryService::guardIntegration`).
+- **Remover** — apaga a conexão, os pagamentos espelhados, as transações `mercado_pago` (definitivo) e as
+  categorias da integração; uma categoria reaproveitada em lançamento manual fica, como categoria comum.
+- **Dashboard** — `GET /finance/dashboard` traz `sources` (receita/despesa por origem) e `mercado_pago` (null se
+  desconectado/inativo): totais, meios de pagamento, status, composição do bruto e compras. Gráficos em
+  `dashboardCharts.js` com `group: 'mercado_pago'` (rosquinhas, `donut()`), painel abaixo dos gráficos gerais.
+  **Personalizar**: cada usuário esconde gráficos (`preferences.dashboard_hidden_charts`); um gráfico que sobra
+  sozinho numa linha ocupa a linha inteira.
+

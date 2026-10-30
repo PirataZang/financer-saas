@@ -15,3 +15,12 @@ export function timeAgo(value, now = new Date()) {
   if (days < 30) return `há ${days} dias`
   return date.toLocaleDateString('pt-BR')
 }
+
+// "agora", "há 12 min", "há 3 h", then the date and time — for sync timestamps.
+export function sinceTime(value, now = new Date()) {
+  const minutes = Math.floor((now - new Date(value)) / 60_000)
+  if (minutes < 1) return 'agora'
+  if (minutes < 60) return `há ${minutes} min`
+  if (minutes < 24 * 60) return `há ${Math.floor(minutes / 60)} h`
+  return new Date(value).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+}

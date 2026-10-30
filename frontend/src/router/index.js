@@ -405,9 +405,10 @@ const routes = [
           menu: {
             label: 'Configurações',
             icon: 'fa-solid fa-gear',
-            description: 'Empresa, aparência, financeiro, bot do Telegram e preferências',
+            description: 'Empresa, aparência, financeiro, integrações, bot do Telegram e preferências',
             keywords: ['configuração', 'ajustes', 'telegram', 'bot', 'vínculo', 'código', 'aparência', 'cor', 'tema',
-              'marca', 'fuso', 'horário', 'preferências', 'densidade', 'página inicial', 'empresa', 'cnpj'],
+              'marca', 'fuso', 'horário', 'preferências', 'densidade', 'página inicial', 'empresa', 'cnpj',
+              'integração', 'mercado pago', 'pix', 'conectar'],
             module: 'Configurações',
             order: 800,
           },

@@ -26,6 +26,7 @@ import AppearanceTab from './AppearanceTab.vue'
 import FinanceTab from './FinanceTab.vue'
 import TelegramTab from './TelegramTab.vue'
 import PortalTab from './PortalTab.vue'
+import IntegrationsTab from './IntegrationsTab.vue'
 import PreferencesTab from './PreferencesTab.vue'
 
 // Company tabs (current company) each need their settings.* permission; Preferências is the user's own.
@@ -35,6 +36,7 @@ const ALL_TABS = [
   { value: 'appearance', label: 'Aparência', icon: 'fa-solid fa-palette', permission: 'settings.appearance', component: AppearanceTab },
   { value: 'finance', label: 'Financeiro', icon: 'fa-solid fa-wallet', permission: 'settings.finance', component: FinanceTab },
   { value: 'portal', label: 'Portal do cliente', icon: 'fa-solid fa-mobile-screen', permission: 'settings.portal', component: PortalTab },
+  { value: 'integrations', label: 'Integrações', icon: 'fa-solid fa-plug', permission: 'settings.integrations', component: IntegrationsTab },
   { value: 'telegram', label: 'Telegram', icon: 'fa-brands fa-telegram', permission: 'settings.telegram', component: TelegramTab },
   { value: 'preferences', label: 'Preferências', icon: 'fa-solid fa-sliders', component: PreferencesTab },
 ]

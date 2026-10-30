@@ -102,6 +102,11 @@ class SettingsTest extends TestCase
 
         $this->putJson('/api/settings/preferences', ['start_page' => 'https://evil.example', 'table_density' => 'tiny'], $mine)
             ->assertJsonValidationErrors(['start_page', 'table_density']);
+
+        // A list preference is stored as given (not merged key by key).
+        $this->putJson('/api/settings/preferences', ['dashboard_hidden_charts' => ['mp-status', 'balance']], $mine)->assertOk();
+        $this->getJson('/api/auth/me', $mine)->assertJsonPath('preferences.dashboard_hidden_charts', ['mp-status', 'balance']);
+        $this->putJson('/api/settings/preferences', ['dashboard_hidden_charts' => ['<script>']], $mine)->assertJsonValidationErrors('dashboard_hidden_charts.0');
     }
 
     public function test_telegram_code_links_users_to_its_company(): void

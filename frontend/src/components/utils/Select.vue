@@ -1,6 +1,10 @@
 <template>
   <div ref="root" class="field" :class="[$attrs.class, { 'is-open': open }]" :style="$attrs.style">
-    <label v-if="label" class="field-label" :for="selectId">{{ label }}</label>
+    <div v-if="label && tip" class="field-label field-label--tip">
+      <label :for="selectId">{{ label }}</label>
+      <InfoTip :title="label" :text="tip" />
+    </div>
+    <label v-else-if="label" class="field-label" :for="selectId">{{ label }}</label>
 
     <button
       :id="selectId"
@@ -113,6 +117,7 @@
 </template>
 
 <script setup>
+import InfoTip from '@/components/ui/InfoTip.vue'
 import { computed, nextTick, onUnmounted, ref, useAttrs, watch } from 'vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
 import { normalize } from '@/permissions'
@@ -126,6 +131,8 @@ import { normalize } from '@/permissions'
 // das opções (opções podem carregar campos extras); `footer` ({ close }) entra no fim da lista.
 // Seletores de entidade (ex. finance/CategorySelect) só carregam as opções e herdam o resto via $attrs.
 const props = defineProps({
+  /** Help shown by an ⓘ next to the label (components/ui/InfoTip.vue): what the field is and what it does. */
+  tip: { type: String, default: '' },
   label: { type: String, default: '' },
   options: { type: Array, default: () => [] },
   placeholder: { type: String, default: '' },

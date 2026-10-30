@@ -12,7 +12,8 @@ services:
     environment:
       - APP_ENV=${APP_ENV:-local}
       - APP_DEBUG=${APP_DEBUG:-true}
-      - APP_KEY=${APP_KEY}
+      # APP_KEY lives in backend/.env (entrypoint generates it). Passing an empty one here used to
+      # override it and leave the app without a key (encryption, signed data).
       - DB_CONNECTION=pgsql
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -29,6 +30,63 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - financial_bot_network
+
+  # Runs the schedule (bootstrap/app.php withSchedule): it only queues jobs; the `queue` service runs them.
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_NAME:-financial-bot}_scheduler
+    restart: unless-stopped
+    # Skips the entrypoint (migrations/seed are the backend's job).
+    entrypoint: ["php", "artisan", "schedule:work"]
+    volumes:
+      - ./backend:/var/www/html
+    environment:
+      - APP_ENV=${APP_ENV:-local}
+      - APP_DEBUG=${APP_DEBUG:-true}
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE:-financial_bot}
+      - DB_USERNAME=${DB_USER:-financial_bot}
+      - DB_PASSWORD=${DB_PASSWORD:-01a25d4dc931586475f11506}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-6f93b8c8bd1cc6b1f3fa83b7}
+    depends_on:
+      - backend
+    networks:
+      - financial_bot_network
+
+  # Runs queued jobs (app/Jobs): one sync / report request per company, queued by the scheduler.
+  # --max-time makes it restart hourly, so a deploy is picked up without queue:restart.
+  queue:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_NAME:-financial-bot}_queue
+    restart: unless-stopped
+    # Skips the entrypoint (migrations/seed are the backend's job).
+    entrypoint: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--max-time=3600"]
+    volumes:
+      - ./backend:/var/www/html
+    environment:
+      - APP_ENV=${APP_ENV:-local}
+      - APP_DEBUG=${APP_DEBUG:-true}
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE:-financial_bot}
+      - DB_USERNAME=${DB_USER:-financial_bot}
+      - DB_PASSWORD=${DB_PASSWORD:-01a25d4dc931586475f11506}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-6f93b8c8bd1cc6b1f3fa83b7}
+    depends_on:
+      - backend
     networks:
       - financial_bot_network
 
@@ -80,7 +138,8 @@ services:
       - POSTGRES_USER=${DB_USER:-financial_bot}
       - POSTGRES_PASSWORD=${DB_PASSWORD:-01a25d4dc931586475f11506}
     ports:
-      - "${DB_PORT_EXTERNAL:-5432}:5432"
+      # Host loopback only: reach it remotely through an SSH tunnel, never straight from the internet.
+      - "127.0.0.1:${DB_PORT_EXTERNAL:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -97,7 +156,7 @@ services:
     restart: unless-stopped
     command: redis-server --requirepass "${REDIS_PASSWORD:-6f93b8c8bd1cc6b1f3fa83b7}" --bind 0.0.0.0 --protected-mode no
     ports:
-      - "${REDIS_PORT_EXTERNAL:-6379}:6379"
+      - "127.0.0.1:${REDIS_PORT_EXTERNAL:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:

@@ -41,6 +41,8 @@ class SettingsService
         'table_density' => 'comfortable',
         // Route opened after login; null (or one the user can't open) = first menu entry.
         'start_page' => null,
+        // Finance dashboard charts this user hid ("Personalizar"), by chart key (dashboardCharts.js).
+        'dashboard_hidden_charts' => [],
     ];
 
     private const PERIODS = ['today', '7d', '30d', 'month', 'lastMonth', '3m', 'year'];
@@ -120,6 +122,8 @@ class SettingsService
             'sidebar_expanded' => ['sometimes', 'nullable', 'boolean'],
             'table_density' => ['sometimes', Rule::in(['comfortable', 'compact'])],
             'start_page' => ['sometimes', 'nullable', 'string', 'max:100', 'regex:#^/[a-z0-9/_-]*$#'],
+            'dashboard_hidden_charts' => ['sometimes', 'array', 'max:30'],
+            'dashboard_hidden_charts.*' => ['string', 'max:40', 'regex:/^[a-z0-9-]+$/'],
         ];
     }
 
@@ -128,7 +132,8 @@ class SettingsService
     {
         foreach ($defaults as $key => $value) {
             if (array_key_exists($key, $stored)) {
-                $defaults[$key] = is_array($value) ? self::merge($value, (array) $stored[$key]) : $stored[$key];
+                // Sections merge key by key; a list (e.g. dashboard_hidden_charts) is a value, stored as is.
+                $defaults[$key] = is_array($value) && !array_is_list($value) ? self::merge($value, (array) $stored[$key]) : $stored[$key];
             }
         }
 

@@ -1,6 +1,10 @@
 <template>
   <div class="field">
-    <label v-if="label" class="field-label" :for="inputId">{{ label }}</label>
+    <div v-if="label && tip" class="field-label field-label--tip">
+      <label :for="inputId">{{ label }}</label>
+      <InfoTip :title="label" :text="tip" />
+    </div>
+    <label v-else-if="label" class="field-label" :for="inputId">{{ label }}</label>
 
     <div
       class="field-shell field-control"
@@ -56,11 +60,14 @@
 </template>
 
 <script setup>
+import InfoTip from '@/components/ui/InfoTip.vue'
 import { computed, useAttrs, useSlots, ref, nextTick } from 'vue'
 import { MASKS } from '@/utils/masks'
 
 // class="col-6" cai no root automaticamente (inheritAttrs default)
 const props = defineProps({
+  /** Help shown by an ⓘ next to the label (components/ui/InfoTip.vue): what the field is and what it does. */
+  tip: { type: String, default: '' },
   width: { type: String, default: '' },
   label: { type: String, default: '' },
   placeholder: { type: String, default: '' },

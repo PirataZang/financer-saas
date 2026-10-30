@@ -53,6 +53,14 @@
             <div class="category-card__meta">
               <StatusBadge v-bind="typeBadge(category.type)" small />
               <StatusBadge v-if="category.goal" label="Meta" color="info" icon="fa-solid fa-bullseye" small />
+              <StatusBadge
+                v-if="category.integration_key"
+                label="Integração · Mercado Pago"
+                color="info"
+                icon="fa-solid fa-plug"
+                small
+                title="Criada pela integração com o Mercado Pago. Dá para mudar nome, ícone e cor; ela sai junto com a integração."
+              />
               <span>{{ category.transactions_count }} {{ category.transactions_count === 1 ? 'transação' : 'transações' }}</span>
             </div>
           </div>
@@ -63,7 +71,7 @@
             class="category-card__switch"
             :model-value="category.active"
             :text-label="category.active ? 'Ativa' : 'Inativa'"
-            :disabled="!auth.can('finance.category.update')"
+            :disabled="!auth.can('finance.category.update') || !!category.integration_key"
             :aria-label="`${category.active ? 'Desativar' : 'Ativar'} ${category.name}`"
             @change="toggleActive(category, $event)"
           />
@@ -86,9 +94,9 @@
             title="Histórico"
             @click="historyId = category.id"
           />
-          <!-- A meta's category is deleted with the meta (Metas screen). -->
+          <!-- A meta's category is deleted with the meta (Metas screen); an integration's, with the integration. -->
           <Button
-            v-if="!category.goal"
+            v-if="!category.goal && !category.integration_key"
             v-can="'finance.category.delete'"
             variant="ghost"
             size="sm"

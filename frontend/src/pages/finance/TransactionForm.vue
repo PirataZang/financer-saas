@@ -12,12 +12,12 @@
 
       <form v-else @submit.prevent="submitForm">
         <fieldset class="form-grid" :disabled="readOnly">
-          <Select class="col-3" v-model="form.type" label="Tipo" :options="options.types" :disabled="readOnly" @change="onTypeChange" />
-          <Input id="tx-amount" class="col-3" v-model="form.amount" label="Valor" mask="money" placeholder="0,00" required>
+          <Select class="col-3" v-model="form.type" label="Tipo" :options="options.types" :disabled="readOnly || locked" @change="onTypeChange" />
+          <Input id="tx-amount" class="col-3" v-model="form.amount" label="Valor" mask="money" placeholder="0,00" required :disabled="locked">
             <template #prefix>R$</template>
           </Input>
-          <Input class="col-3" v-model="form.date" label="Data" type="date" required />
-          <Select class="col-3" v-model="form.status" label="Status" :options="options.statuses" :disabled="readOnly" />
+          <Input class="col-3" v-model="form.date" label="Data" type="date" required :disabled="locked" />
+          <Select class="col-3" v-model="form.status" label="Status" :options="options.statuses" :disabled="readOnly || locked" />
 
           <Input class="col-8" v-model="form.description" label="Descrição" placeholder="Ex.: Compra do supermercado" required maxlength="255" />
           <CategorySelect class="col-4" v-model="form.category_id" label="Categoria" :type="form.type" placeholder="Selecione..." :disabled="readOnly" />
@@ -37,6 +37,25 @@
             </p>
           </template>
         </fieldset>
+
+        <!-- Facts an integration brought: shown as plain text, nothing in here can be edited. -->
+        <section v-if="integration" class="locked" aria-labelledby="locked-title">
+          <header class="locked__head">
+            <img v-if="integrationMeta" :src="integrationMeta.logo" alt="" width="22" height="22" />
+            <h3 id="locked-title">{{ integration.title }}</h3>
+            <span class="locked__badge"><i class="fa-solid fa-lock" aria-hidden="true" /> Somente leitura</span>
+          </header>
+          <p class="locked__hint">
+            Estes dados vêm do {{ integrationMeta?.name ?? 'provedor' }} e são atualizados a cada sincronização. Tipo, valor, data e
+            status não podem ser editados aqui; descrição, categoria e cliente continuam seus.
+          </p>
+          <dl class="locked__facts">
+            <div v-for="fact in integration.fields" :key="fact.label">
+              <dt>{{ fact.label }}</dt>
+              <dd>{{ showFact(fact) }}</dd>
+            </div>
+          </dl>
+        </section>
 
         <div v-if="error" class="form-error" style="margin-top: 16px">{{ error }}</div>
 
@@ -76,6 +95,8 @@ import { swal } from '@/plugins/swal'
 import { useAuthStore } from '@/stores/auth'
 import { toDateString } from '@/utils/period'
 import { formatMoney } from '@/utils/money'
+import { formatDate } from '@/utils/date'
+import { INTEGRATIONS } from '@/integrations/catalog'
 
 const REPEAT_OPTIONS = [
   { value: 'none', label: 'Não repete' },
@@ -103,6 +124,10 @@ const loading = ref(false)
 const saving = ref(false)
 const error = ref('')
 const source = ref('')
+// Facts of the provider an entry came from (Mercado Pago...): null for manual entries.
+const integration = ref(null)
+const locked = computed(() => !!integration.value)
+const integrationMeta = computed(() => INTEGRATIONS[integration.value?.provider])
 const options = ref({ types: [], statuses: [], sources: [] })
 // New entries start with the company's default status (Configurações › Financeiro); Metas' "Aportar"/"Resgatar"
 // open it with ?type=&category_id= already picked.
@@ -123,6 +148,13 @@ const sourceBadge = computed(() => {
   const option = options.value.sources.find((o) => o.value === source.value)
   return option && { label: `Origem: ${option.label}`, color: option.color, icon: option.icon }
 })
+
+const showFact = ({ value, format }) => {
+  if (format === 'money') return formatMoney(value)
+  if (format === 'date') return formatDate(value)
+  if (format === 'datetime') return new Date(value).toLocaleString('pt-BR')
+  return value
+}
 
 // Mirrors TransactionService::createSeries (display only; the API does the real split).
 const repeatHint = computed(() => {
@@ -163,7 +195,10 @@ const fetchTransaction = async () => {
     Object.keys(form.value).forEach((key) => {
       form.value[key] = data[key] ?? form.value[key]
     })
-    if (isEdit.value) source.value = data.source
+    if (isEdit.value) {
+      source.value = data.source
+      integration.value = data.integration ?? null
+    }
     else form.value.date = toDateString(new Date())
   } catch (err) {
     error.value = err.message
@@ -224,6 +259,68 @@ fieldset {
   padding: 48px 24px;
   color: var(--color-text-muted);
   font-size: 0.9rem;
+}
+
+/* Locked section: the provider's facts, set apart from the editable form. */
+.locked {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 16px 18px;
+  border: 1px dashed var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg-muted);
+}
+
+.locked__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.locked__head h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.locked__badge {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.locked__hint {
+  margin: 0;
+  max-width: 70ch;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.locked__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px 20px;
+  margin: 0;
+}
+
+.locked__facts dt {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.locked__facts dd {
+  margin: 2px 0 0;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 /* Sits on the field row, aligned with the inputs (not their labels). */
