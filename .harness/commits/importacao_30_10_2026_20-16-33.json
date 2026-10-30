@@ -1,0 +1,166 @@
+{
+  "branch": "importacao",
+  "created_at": "2026-10-30T23:16:33.421Z",
+  "author": {
+    "name": "Igor Fronza",
+    "email": "igorfronza20@gmail.com"
+  },
+  "parent": "b7b828e290e13af688ee053b16bd7e533a7d00aa",
+  "notes": null,
+  "stats": {
+    "files": 24,
+    "additions": 2426,
+    "deletions": 6
+  },
+  "files": [
+    {
+      "status": "A",
+      "path": "backend/app/Http/Controllers/ImportController.php",
+      "additions": 143,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Jobs/ImportRowsChunk.php",
+      "additions": 45,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Models/Import.php",
+      "additions": 46,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Models/ImportRow.php",
+      "additions": 29,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/Import/CustomerImport.php",
+      "additions": 113,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/Import/ImportDefinition.php",
+      "additions": 125,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/Import/UserImport.php",
+      "additions": 110,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/app/Service/ImportService.php",
+      "additions": 361,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/config/permissions.php",
+      "additions": 7,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/database/migrations/0001_01_01_000014_create_imports_tables.php",
+      "additions": 46,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/database/migrations/0001_01_01_000015_add_secret_to_import_rows.php",
+      "additions": 23,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/routes/api.php",
+      "additions": 16,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Feature/ImportTest.php",
+      "additions": 208,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/utils/AgGrid.vue",
+      "additions": 4,
+      "deletions": 4
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/import/ImportDetail.vue",
+      "additions": 275,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/import/ImportList.vue",
+      "additions": 109,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/import/ImportWizard.vue",
+      "additions": 640,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/import/status.js",
+      "additions": 5,
+      "deletions": 0
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/import/types.js",
+      "additions": 34,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/permissions.js",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/router/index.js",
+      "additions": 68,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/services/api.js",
+      "additions": 10,
+      "deletions": 1
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/styles/swal.scss",
+      "additions": 4,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/utils/export.js",
+      "additions": 4,
+      "deletions": 1
+    }
+  ],
+  "branch_history": {
+    "base": "main",
+    "merge_base": "b7b828e290e13af688ee053b16bd7e533a7d00aa",
+    "previous_commits": []
+  }
+}

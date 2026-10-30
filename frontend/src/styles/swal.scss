@@ -47,6 +47,10 @@
   }
 }
 
+.app-swal-btn[style*='display: none'] {
+  display: none !important; // o SweetAlert esconde o botão (ex.: "No") assim; o !important acima o reexibia.
+}
+
 .app-swal-btn--confirm {
   background: var(--color-primary) !important;
   color: #fff !important;
