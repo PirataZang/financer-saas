@@ -1,36 +1,21 @@
-name: Deploy
+name: Deploy VPS
 
-# Todo push na main faz `git pull` na VPS via SSH.
-# Secrets (Settings > Secrets and variables > Actions):
-#   VPS_HOST     IP ou domínio da VPS
-#   VPS_USER     usuário do SSH
-#   VPS_SSH_KEY  chave privada (conteúdo completo) cuja pública está em ~/.ssh/authorized_keys da VPS
-#   VPS_PATH     pasta do projeto na VPS (onde está o .git)
-#   VPS_PORT     opcional, padrão 22
 on:
   push:
     branches: [main]
-
-# Dois pushes seguidos não rodam o pull ao mesmo tempo.
-concurrency:
-  group: deploy
-  cancel-in-progress: false
+  workflow_dispatch: {}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Pull na VPS
-        env:
-          HOST: ${{ secrets.VPS_HOST }}
-          USER_NAME: ${{ secrets.VPS_USER }}
-          KEY: ${{ secrets.VPS_SSH_KEY }}
-          APP_PATH: ${{ secrets.VPS_PATH }}
-          PORT: ${{ secrets.VPS_PORT || '22' }}
-        run: |
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
-          # ponytail: confia na chave do host no primeiro contato (ssh-keyscan); fixe em um secret VPS_KNOWN_HOSTS se quiser blindar contra MITM.
-          ssh-keyscan -p "$PORT" -H "$HOST" >> ~/.ssh/known_hosts
-          # --ff-only: se a VPS tiver alteração local ou histórico divergente, falha em vez de fazer merge.
-          ssh -i ~/.ssh/deploy_key -p "$PORT" "$USER_NAME@$HOST" "cd '$APP_PATH' && git pull --ff-only origin main"
+      - name: SSH e git pull na VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ vars.VPS_HOST }}
+          username: ${{ vars.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ vars.VPS_PORT || 22 }}
+          script: |
+            cd ${{ vars.VPS_PATH }}
+            git pull

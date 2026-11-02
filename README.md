@@ -1,12 +1,153 @@
-# Financer-saas
+<div align="center">
 
-SaaS multi-empresa de gestão financeira e CRM: financeiro (transações, categorias, metas e dashboard), clientes,
-projetos com portal do cliente, lançamentos pelo Telegram e integração com o Mercado Pago. Laravel 13 (API) + Vue 3
-(SPA) + PostgreSQL + Redis, tudo em Docker, no padrão de arquitetura e design do peppercore-admin (gerado pela
-skill `create-crm`).
+# Financer SaaS
 
-Veja [`design.md`](design.md) para os padrões de componente, página e backend a seguir ao
-adicionar novas telas/recursos, e [`mercadopago.md`](mercadopago.md) para o planejamento do módulo de cobranças.
+**CRM + gestão financeira multi-empresa, com portal do cliente, importação em massa e lançamentos pelo Telegram.**
+
+![Laravel](https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel&logoColor=white)
+![PHP](https://img.shields.io/badge/PHP-8.3-777BB4?logo=php&logoColor=white)
+![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white)
+![Telegram](https://img.shields.io/badge/Telegram-bot-26A5E4?logo=telegram&logoColor=white)
+
+<img src="docs/media/dashboard.gif" alt="Dashboard com cards, listas de atenção e gráficos" width="860">
+
+</div>
+
+> [!NOTE]
+> **Este é um modelo de projeto financeiro, ainda sem nicho definido.** Ele nasceu como uma base genérica de SaaS
+> (empresas, usuários, clientes, projetos, financeiro) para ser **verticalizada** em um nicho depois: agência,
+> clínica, prestador de serviços, assessoria... Por isso as telas e os textos são gerais, e os dados das demonstrações
+> abaixo são fictícios. O foco aqui é a **arquitetura e a qualidade da base**, não um mercado específico.
+
+## ✨ O que ele faz
+
+| | Módulo | Em uma frase |
+|---|---|---|
+| 🏢 | **Multi-empresa (SaaS)** | Cada empresa só enxerga os próprios dados; licença com validade e troca de empresa para o administrador. |
+| 📊 | **Dashboard** | Clientes e projetos em dia ou atrasados, listas do que precisa de atenção e gráficos dos últimos 12 meses. |
+| 👥 | **Clientes e funil** | Lead → em aquecimento → cliente → cancelado, com formulário público de captação por empresa. |
+| 🗂️ | **Projetos e portal do cliente** | Etapas e progresso; o cliente acompanha tudo pelo celular, entrando com um código enviado por e-mail. |
+| 💰 | **Financeiro** | Transações, categorias, metas (guardar e limitar gastos) e um dashboard financeiro com filtros. |
+| 📥 | **Importação em massa** | Planilha Excel/CSV → relaciona colunas → revisa e corrige no grid → importa em fila → baixa os erros. |
+| 📄 | **Documentos** | Contratos e propostas com variáveis (`{{Cliente.name}}`), emitidos em PDF já preenchido. |
+| 💳 | **Mercado Pago** | Importa vendas, tarifas e estornos automaticamente para o financeiro. |
+| 🤖 | **Bot do Telegram** | Lança receitas e despesas e consulta o balancete direto no chat. |
+| 🔐 | **Permissões e auditoria** | Permissão por ação em cada usuário e histórico de quem alterou o quê. |
+
+## 🎬 Veja funcionando
+
+### Importação de clientes em 5 passos
+Anexar a planilha, relacionar as colunas (o que o sistema reconhece sozinho já vem preenchido), revisar e **corrigir
+direto no grid**, confirmar e acompanhar o processamento em fila. Quem já existe é atualizado, e o sistema avisa
+antes. O que falhar vira um CSV com a coluna **Erro** para corrigir e reenviar.
+
+<img src="docs/media/importacao.gif" alt="Assistente de importação de clientes" width="860">
+
+### Grid com busca, filtros, colunas e exportação
+Todas as listas usam o mesmo componente: busca, filtros, escolha das colunas visíveis e exportação para Excel/CSV
+na ordem e com os títulos que estão na tela.
+
+<img src="docs/media/grid.gif" alt="Grid com filtros, seletor de colunas e exportação" width="860">
+
+### Dashboard financeiro
+Período, categorias, origem e status filtram todos os números e gráficos ao mesmo tempo.
+
+<img src="docs/media/financeiro.gif" alt="Dashboard financeiro" width="860">
+
+## 🖼️ Telas
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/media/tela-dashboard.png" alt="Dashboard"><br><sub><b>Dashboard</b>: situação de clientes e projetos</sub></td>
+    <td width="50%"><img src="docs/media/tela-financeiro.png" alt="Dashboard financeiro"><br><sub><b>Financeiro</b>: receitas, despesas, saldo e metas</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/media/tela-importacao-revisao.png" alt="Revisão da importação"><br><sub><b>Importação</b>: revisão com validação linha a linha</sub></td>
+    <td><img src="docs/media/tela-projeto.png" alt="Projeto com etapas"><br><sub><b>Projetos</b>: etapas e progresso que o cliente vê no portal</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/media/tela-metas.png" alt="Metas"><br><sub><b>Metas</b>: guardar dinheiro ou limitar gastos</sub></td>
+    <td><img src="docs/media/tela-documento.png" alt="Editor de documentos"><br><sub><b>Documentos</b>: editor com variáveis e emissão em PDF</sub></td>
+  </tr>
+</table>
+
+### Portal do cliente (celular)
+
+<div align="center">
+<img src="docs/media/tela-portal-mobile.png" alt="Portal do cliente no celular: início, projeto e contas" width="860">
+</div>
+
+## 🧱 Arquitetura
+
+```mermaid
+flowchart LR
+    U[Equipe da empresa] --> SPA[Vue 3 SPA]
+    C[Cliente final] --> P[Portal do cliente]
+    T[Telegram] --> B[Bot grammY]
+    SPA --> API[API Laravel 13]
+    P --> API
+    B --> API
+    API --> PG[(PostgreSQL)]
+    API --> R[(Redis)]
+    R --> Q[Worker de fila]
+    S[Scheduler] --> R
+    Q --> PG
+    Q --> MP[Mercado Pago]
+```
+
+| Camada | Tecnologia |
+|---|---|
+| API | Laravel 13, PHP 8.3, autenticação por bearer token próprio, auditoria com `spatie/laravel-activitylog` |
+| Front | Vue 3 + Vite, Pinia, AG Grid, ECharts, SweetAlert2 |
+| Dados | PostgreSQL, Redis (cache, sessão e fila) |
+| Assíncrono | Jobs em fila (importações, sincronização do Mercado Pago) e scheduler |
+| Bot | Node + TypeScript (grammY), fala só com `/api/bot/*` |
+| Infra | Docker Compose: backend, frontend, bot, queue, scheduler, postgres, redis |
+
+### Decisões técnicas que valem a conversa
+
+- **Isolamento entre empresas por padrão.** Um *global scope* filtra toda consulta pela empresa atual, e um teste
+  (`TenancyTest`) falha se alguma tabela de modelo nascer sem `company_id`.
+- **Permissões como código.** Cada ação do controller declara a permissão com um atributo PHP
+  (`#[Permission('users.create')]`), e `config/permissions.php` é a fonte única, sincronizada com o banco.
+- **Importação genérica.** Um `ImportService` serve qualquer tipo; clientes e usuários são só *definições*
+  (campos, regras, como achar o registro existente, como salvar). Linhas vão para a fila em lotes de 100, e o
+  andamento vem da contagem das próprias linhas, sem estado duplicado.
+- **Segredos fora dos dados.** Senhas de uma importação de usuários ficam criptografadas à parte, nunca voltam na API e
+  são apagadas depois de processadas.
+- **Colunas sensíveis protegidas no model.** O atributo `#[ProtectedColumns]` esconde token e afins de toda resposta, ignora
+  esses campos em `fill()`/`create()`, tira do log de auditoria e, nos "travados", só deixa o banco ou o console alterar.
+- **Testes.** Mais de 170 testes de backend (banco em memória, nunca toca o de desenvolvimento), mais testes de regras do
+  front e do parser do bot.
+
+## 🚀 Rodando localmente
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+```
+
+Frontend em http://localhost:5174 e API em http://localhost:8000. Migrations, permissões e usuários de teste são
+criados na primeira subida (logins em [Seed / usuário de teste](#seed--usuário-de-teste)).
+
+## 🗺️ Próximos passos
+
+- Escolher um **nicho** e adaptar vocabulário, campos e fluxos a ele.
+- Cobranças, boletos e assinaturas pelo Mercado Pago (planejado em [`mercadopago.md`](mercadopago.md)).
+
+## 👤 Autor
+
+**Igor Fronza**, engenheiro de software. [GitHub](https://github.com/PirataZang)
+
+---
+
+# 📚 Documentação técnica
+
+Veja [`design.md`](design.md) para os padrões de componente, página e backend a seguir ao adicionar novas
+telas/recursos, e [`mercadopago.md`](mercadopago.md) para o planejamento do módulo de cobranças.
 
 ## Subindo o projeto
 

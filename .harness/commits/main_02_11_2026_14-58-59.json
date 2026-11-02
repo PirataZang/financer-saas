@@ -1,0 +1,119 @@
+{
+  "branch": "main",
+  "created_at": "2026-11-02T17:58:59.085Z",
+  "author": {
+    "name": "Igor Fronza",
+    "email": "igorfronza20@gmail.com"
+  },
+  "parent": "32257a920daab127f2d70e0e6efe9ace9fd752f8",
+  "notes": null,
+  "stats": {
+    "files": 17,
+    "additions": 160,
+    "deletions": 34
+  },
+  "files": [
+    {
+      "status": "M",
+      "path": ".github/workflows/deploy.yml",
+      "additions": 12,
+      "deletions": 27
+    },
+    {
+      "status": "M",
+      "path": "README.md",
+      "additions": 148,
+      "deletions": 7
+    },
+    {
+      "status": "A",
+      "path": "docs/media/dashboard.gif",
+      "additions": null,
+      "deletions": null
+    },
+    {
+      "status": "A",
+      "path": "docs/media/financeiro.gif",
+      "additions": null,
+      "deletions": null
+    },
+    {
+      "status": "A",
+      "path": "docs/media/grid.gif",
+      "additions": null,
+      "deletions": null
+    },
+    {
+      "status": "A",
+      "path": "docs/media/importacao.gif",
+      "additions": null,
+      "deletions": null
+    },
+    {
+      "status": "A",
+      "path": "docs/media/tela-clientes.png",
+      "additions": null,
+      "deletions": null
+    },
+    {
+      "status": "A",
+      "path": "docs/media/tela-dashboard.png",
+      "additions": null,
+      "deletions": null
+    },
+    {
+      "status": "A",
+      "path": "docs/media/tela-documento.png",
+      "additions": null,
+      "deletions": null
+    },
+    {
+      "status": "A",
+      "path": "docs/media/tela-financeiro.png",
+      "additions": null,
+      "deletions": null
+    },
+    {
+      "status": "A",
+      "path": "docs/media/tela-importacao-colunas.png",
+      "additions": null,
+      "deletions": null
+    },
+    {
+      "status": "A",
+      "path": "docs/media/tela-importacao-resultado.png",
+      "additions": null,
+      "deletions": null
+    },
+    {
+      "status": "A",
+      "path": "docs/media/tela-importacao-revisao.png",
+      "additions": null,
+      "deletions": null
+    },
+    {
+      "status": "A",
+      "path": "docs/media/tela-metas.png",
+      "additions": null,
+      "deletions": null
+    },
+    {
+      "status": "A",
+      "path": "docs/media/tela-portal-mobile.png",
+      "additions": null,
+      "deletions": null
+    },
+    {
+      "status": "A",
+      "path": "docs/media/tela-projeto.png",
+      "additions": null,
+      "deletions": null
+    },
+    {
+      "status": "A",
+      "path": "docs/media/tela-transacoes.png",
+      "additions": null,
+      "deletions": null
+    }
+  ]
+}
