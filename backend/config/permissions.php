@@ -79,6 +79,13 @@ return [
             'emit' => 'Emitir documentos em PDF',
         ],
     ],
+    'imports' => [
+        'name' => 'Importação',
+        'actions' => [
+            'view' => 'Visualizar importações e seus erros',
+            'create' => 'Importar dados por planilha (cria e atualiza registros)',
+        ],
+    ],
     'settings' => [
         'name' => 'Configurações',
         'actions' => [

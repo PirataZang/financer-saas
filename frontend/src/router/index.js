@@ -26,6 +26,9 @@ import ProjectForm from '@/pages/project/ProjectForm.vue'
 import AnnouncementList from '@/pages/announcement/AnnouncementList.vue'
 import AnnouncementForm from '@/pages/announcement/AnnouncementForm.vue'
 import DocumentList from '@/pages/document/DocumentList.vue'
+import ImportList from '@/pages/import/ImportList.vue'
+import ImportWizard from '@/pages/import/ImportWizard.vue'
+import ImportDetail from '@/pages/import/ImportDetail.vue'
 import DocumentEditor from '@/pages/document/DocumentEditor.vue'
 // Portal do cliente: lazy chunks, so the CRM bundle doesn't carry the portal screens.
 const PortalLayout = () => import('@/layouts/PortalLayout.vue')
@@ -257,6 +260,71 @@ const routes = [
         component: DocumentEditor,
         props: true,
         meta: { permission: 'documents.update' },
+      },
+      // Importação: planilha → registros (meta.menu.group 'import'). O wizard e o detalhe não têm item de menu.
+      {
+        path: 'import/customer',
+        name: 'ImportCustomerList',
+        component: ImportList,
+        props: { type: 'customer' },
+        meta: {
+          permission: 'imports.view',
+          menu: {
+            label: 'Clientes',
+            icon: 'fa-solid fa-address-book',
+            description: 'Importar clientes de uma planilha Excel ou CSV',
+            keywords: ['importar', 'planilha', 'excel', 'csv', 'carga', 'upload', 'clientes'],
+            module: 'Importação',
+            group: 'import',
+            order: 21,
+          },
+        },
+      },
+      {
+        path: 'import/customer/new',
+        name: 'ImportCustomerNew',
+        component: ImportWizard,
+        props: { type: 'customer' },
+        meta: { permission: 'imports.create' },
+      },
+      {
+        path: 'import/customer/:id',
+        name: 'ImportCustomerDetail',
+        component: ImportDetail,
+        props: (route) => ({ id: route.params.id, type: 'customer' }),
+        meta: { permission: 'imports.view' },
+      },
+      {
+        path: 'import/user',
+        name: 'ImportUserList',
+        component: ImportList,
+        props: { type: 'user' },
+        meta: {
+          permission: 'imports.view',
+          menu: {
+            label: 'Usuários',
+            icon: 'fa-solid fa-users',
+            description: 'Importar usuários de uma planilha Excel ou CSV',
+            keywords: ['importar', 'planilha', 'excel', 'csv', 'carga', 'upload', 'usuários', 'acesso'],
+            module: 'Importação',
+            group: 'import',
+            order: 22,
+          },
+        },
+      },
+      {
+        path: 'import/user/new',
+        name: 'ImportUserNew',
+        component: ImportWizard,
+        props: { type: 'user' },
+        meta: { permission: 'imports.create' },
+      },
+      {
+        path: 'import/user/:id',
+        name: 'ImportUserDetail',
+        component: ImportDetail,
+        props: (route) => ({ id: route.params.id, type: 'user' }),
+        meta: { permission: 'imports.view' },
       },
       // Financeiro: meta.menu.group nests these under "Financeiro" in the sidebar.
       {

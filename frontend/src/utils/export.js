@@ -83,6 +83,9 @@ export function toXlsx(rows, sheetName = 'Dados') {
 export function download(blob, filename) {
   const url = URL.createObjectURL(blob)
   const a = Object.assign(document.createElement('a'), { href: url, download: filename })
+  // Firefox só baixa se o link estiver no DOM e não gosta da URL revogada na hora.
+  document.body.append(a)
   a.click()
-  URL.revokeObjectURL(url)
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

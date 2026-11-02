@@ -37,6 +37,7 @@ export function menuItems(routes, user) {
 // tone: the parent's own color (restricted = masters-only area, warning icon).
 export const MENU_GROUPS = {
   portal: { label: 'Portal do cliente', icon: 'fa-solid fa-mobile-screen', order: 17 },
+  import: { label: 'Importação', icon: 'fa-solid fa-file-import', order: 20 },
   finance: { label: 'Financeiro', icon: 'fa-solid fa-wallet', order: 30 },
   restricted: { label: 'Restrita', icon: 'fa-solid fa-triangle-exclamation', tone: 'restricted', order: 900 },
 }

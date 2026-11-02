@@ -1,39 +1,70 @@
 <template>
   <div class="page fade-in">
-    <PageHeader
-      title="Dashboard"
-      subtitle="Resumo com dados de exemplo — troque por consultas reais assim que tiver models."
-      icon="fa-solid fa-gauge-high"
-    />
+    <PageHeader title="Dashboard" subtitle="Situação de clientes e projetos." icon="fa-solid fa-gauge-high" />
 
-    <div class="kpi-grid">
-      <div class="kpi-card glass-panel">
-        <span class="kpi-label">Total de Registros</span>
-        <span class="kpi-value">{{ summary?.total ?? '—' }}</span>
-      </div>
-      <div class="kpi-card glass-panel">
-        <span class="kpi-label">Receita do Mês</span>
-        <span class="kpi-value">{{ formatMoney(summary?.monthly_revenue) }}</span>
-      </div>
-      <div class="kpi-card glass-panel">
-        <span class="kpi-label">Pendências</span>
-        <span class="kpi-value" :class="{ 'is-danger': summary?.overdue_count }">{{ summary?.overdue_count ?? '—' }}</span>
-      </div>
-      <div class="kpi-card glass-panel">
-        <span class="kpi-label">Próximo Vencimento</span>
-        <span class="kpi-value kpi-value--sm">{{ nextDueLabel }}</span>
-      </div>
+    <p v-if="failed" class="dash-error" role="alert">
+      Não foi possível carregar o dashboard.
+      <button type="button" @click="load">Tentar novamente</button>
+    </p>
+
+    <div class="status-grid">
+      <section v-for="card in statusCards" :key="card.title" class="status-card glass-panel">
+        <header>
+          <span class="status-card__icon" aria-hidden="true"><i :class="card.icon" /></span>
+          <h4>{{ card.title }}</h4>
+        </header>
+
+        <div class="status-card__figures">
+          <div>
+            <span class="figure figure--ok">{{ card.data?.on_time ?? '—' }}</span>
+            <span class="figure-label"><i class="dot dot--ok" />{{ card.ok }}</span>
+          </div>
+          <div>
+            <span class="figure" :class="{ 'figure--late': card.data?.late }">{{ card.data?.late ?? '—' }}</span>
+            <span class="figure-label"><i class="dot dot--late" />{{ card.late }}</span>
+          </div>
+        </div>
+
+        <div class="split" role="img" :aria-label="`${card.data?.on_time ?? 0} ${card.ok}, ${card.data?.late ?? 0} ${card.late}`">
+          <span class="split__ok" :style="{ flexGrow: card.data?.on_time ?? 0 }" />
+          <span class="split__late" :style="{ flexGrow: card.data?.late ?? 0 }" />
+        </div>
+      </section>
+    </div>
+
+    <div class="attention-grid">
+      <section v-for="list in attention" :key="list.title" class="attention-card glass-panel">
+        <header>
+          <div>
+            <h4>{{ list.title }}</h4>
+            <p>{{ list.hint }}</p>
+          </div>
+          <span class="attention-card__total" :class="{ 'has-items': list.data?.total }">{{ list.data?.total ?? '—' }}</span>
+        </header>
+
+        <ul v-if="list.data?.items.length">
+          <li v-for="item in list.data.items" :key="item.id">
+            <router-link :to="{ name: list.route, params: { id: item.id } }">
+              <span class="attention-card__name">{{ item.name }}</span>
+              <span class="attention-card__meta">{{ list.meta(item) }}</span>
+            </router-link>
+          </li>
+        </ul>
+        <p v-else class="attention-card__empty">{{ list.data ? list.empty : '' }}</p>
+
+        <p v-if="list.data?.total > list.data?.items.length" class="attention-card__more">
+          + {{ list.data.total - list.data.items.length }} {{ list.data.total - list.data.items.length === 1 ? 'outro' : 'outros' }}
+        </p>
+      </section>
     </div>
 
     <div class="chart-grid">
-      <div class="chart-card glass-panel">
-        <h4>Registros por Categoria</h4>
-        <EChart v-if="typeChartOption" :option="typeChartOption" height="260px" />
-      </div>
-      <div class="chart-card glass-panel">
-        <h4>Receita Mensal</h4>
-        <EChart v-if="revenueChartOption" :option="revenueChartOption" height="260px" />
-      </div>
+      <section v-for="chart in charts" :key="chart.title" class="chart-card glass-panel">
+        <h4>{{ chart.title }}</h4>
+        <p class="chart-card__hint">{{ chart.hint }}</p>
+        <EChart v-if="chart.option" :option="chart.option" height="260px" />
+        <div v-else class="chart-card__empty">{{ failed ? '' : 'Carregando…' }}</div>
+      </section>
     </div>
   </div>
 </template>
@@ -44,154 +75,392 @@ import { apiFetch } from '@/services/api'
 import EChart from '@/components/ui/EChart.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 
-const CHART_AXIS_COLOR = '#64748b'
-const CHART_GRID_COLOR = '#e2e8f0'
-const CHART_LABEL_COLOR = '#0f172a'
-
 const summary = ref(null)
+const failed = ref(false)
 
-const formatMoney = (value) => {
-  if (!value) return 'R$ 0,00'
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+// Brand color is per company (CSS variable), so charts read tokens at render time.
+const token = (name) => getComputedStyle(document.documentElement).getPropertyValue(`--color-${name}`).trim()
+
+const monthLabel = (ym) => {
+  const [y, m] = ym.split('-').map(Number)
+  const name = new Date(y, m - 1, 1).toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
+  return `${name}/${String(y).slice(2)}`
 }
 
-const nextDueLabel = computed(() => {
-  const next = summary.value?.upcoming_due?.[0]
-  if (!next) return '—'
-  const when = next.days_until_due === 0 ? 'hoje' : `em ${next.days_until_due}d`
-  return `${next.name} · ${when}`
+const baseOption = () => ({
+  grid: { left: 8, right: 16, top: 24, bottom: 8, containLabel: true },
+  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
 })
 
-const typeChartOption = computed(() => {
-  const byCategory = summary.value?.by_category
-  if (!byCategory) return null
+const axisStyle = () => ({
+  axisLine: { lineStyle: { color: token('border') } },
+  axisTick: { show: false },
+  axisLabel: { color: token('text-muted') },
+})
+
+const valueAxis = () => ({
+  type: 'value',
+  minInterval: 1,
+  splitLine: { lineStyle: { color: token('border') } },
+  axisLabel: { color: token('text-muted') },
+})
+
+const barSeries = (data, color, extra = {}) => ({
+  type: 'bar',
+  data,
+  barMaxWidth: 28,
+  itemStyle: { color, borderRadius: [4, 4, 0, 0] },
+  label: { show: true, position: 'top', color: token('text'), fontWeight: 600, formatter: (p) => (p.value ? p.value : '') },
+  ...extra,
+})
+
+const monthlyOption = (series, color) => ({
+  ...baseOption(),
+  xAxis: { type: 'category', data: series.map((s) => monthLabel(s.month)), ...axisStyle() },
+  yAxis: valueAxis(),
+  series: [barSeries(series.map((s) => s.value), color)],
+})
+
+const joinedOption = computed(() => summary.value && monthlyOption(summary.value.customers_joined, token('primary')))
+const doneOption = computed(() => summary.value && monthlyOption(summary.value.projects_done, token('success')))
+
+const lateOption = computed(() => {
+  const buckets = summary.value?.projects_late
+  if (!buckets) return null
 
   return {
-    grid: { left: 8, right: 16, top: 24, bottom: 28, containLabel: true },
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    xAxis: {
-      type: 'category',
-      data: Object.keys(byCategory),
-      axisLine: { lineStyle: { color: CHART_GRID_COLOR } },
-      axisTick: { show: false },
-      axisLabel: { color: CHART_AXIS_COLOR },
-    },
-    yAxis: {
-      type: 'value',
-      minInterval: 1,
-      splitLine: { lineStyle: { color: CHART_GRID_COLOR } },
-      axisLabel: { color: CHART_AXIS_COLOR },
-    },
+    ...baseOption(),
+    xAxis: { type: 'category', data: buckets.map((b) => b.label), ...axisStyle() },
+    yAxis: valueAxis(),
+    series: [barSeries(buckets.map((b) => b.value), token('danger'))],
+  }
+})
+
+// Same tones as CustomerStatus::color().
+const STATUS_TONE = { lead: 'info', warming_up: 'warning', customer: 'success', cancelled: 'text-faint' }
+
+const statusOption = computed(() => {
+  const rows = summary.value?.customers_by_status
+  if (!rows) return null
+
+  return {
+    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    legend: { bottom: 0, icon: 'circle', textStyle: { color: token('text-secondary') } },
     series: [{
-      type: 'bar',
-      data: Object.values(byCategory),
-      barMaxWidth: 24,
-      itemStyle: { color: '#4f46e5', borderRadius: [4, 4, 0, 0] },
-      label: { show: true, position: 'top', color: CHART_LABEL_COLOR, fontWeight: 600 },
+      type: 'pie',
+      radius: ['48%', '72%'],
+      center: ['50%', '44%'],
+      avoidLabelOverlap: true,
+      itemStyle: { borderColor: token('bg-card'), borderWidth: 2 },
+      label: { show: true, formatter: '{c}', color: token('text'), fontWeight: 600 },
+      data: rows.filter((r) => r.value > 0).map((r) => ({
+        name: r.label,
+        value: r.value,
+        itemStyle: { color: token(STATUS_TONE[r.key]) },
+      })),
     }],
   }
 })
 
-const revenueChartOption = computed(() => {
-  const series = summary.value?.monthly_series
-  if (!series) return null
+const statusCards = computed(() => [
+  { title: 'Clientes', icon: 'fa-solid fa-users', data: summary.value?.customers, ok: 'Em dia', late: 'Com pagamento atrasado' },
+  { title: 'Projetos', icon: 'fa-solid fa-diagram-project', data: summary.value?.projects, ok: 'No prazo', late: 'Atrasados' },
+])
 
-  return {
-    grid: { left: 8, right: 16, top: 24, bottom: 28, containLabel: true },
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: { type: 'shadow' },
-      valueFormatter: (v) => formatMoney(v),
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`
+
+const attention = computed(() => {
+  const a = summary.value?.attention
+  return [
+    {
+      title: 'Vencem em 7 dias',
+      hint: 'Projetos em aberto perto do prazo',
+      data: a?.projects_due_soon,
+      route: 'ProjectEdit',
+      empty: 'Nenhum projeto vence nos próximos 7 dias.',
+      meta: (p) => `${p.customer ?? 'Sem cliente'} · ${p.days === 0 ? 'hoje' : `em ${plural(p.days, 'dia', 'dias')}`}`,
     },
-    xAxis: {
-      type: 'category',
-      data: series.map((v) => v.month),
-      axisLine: { lineStyle: { color: CHART_GRID_COLOR } },
-      axisTick: { show: false },
-      axisLabel: { color: CHART_AXIS_COLOR },
+    {
+      title: 'Leads parados',
+      hint: 'Sem atualização há mais de 30 dias',
+      data: a?.stale_leads,
+      route: 'CustomerEdit',
+      empty: 'Nenhum lead parado.',
+      meta: (c) => `${c.status} · ${c.days} dias`,
     },
-    yAxis: {
-      type: 'value',
-      splitLine: { lineStyle: { color: CHART_GRID_COLOR } },
-      axisLabel: { color: CHART_AXIS_COLOR, formatter: (v) => `R$ ${v}` },
+    {
+      title: 'Clientes sem projeto',
+      hint: 'Clientes ativos sem nenhum projeto',
+      data: a?.customers_without_project,
+      route: 'CustomerEdit',
+      empty: 'Todos os clientes têm projeto.',
+      meta: () => '',
     },
-    series: [{
-      type: 'bar',
-      data: series.map((v) => v.value),
-      barMaxWidth: 24,
-      itemStyle: { color: '#2563eb', borderRadius: [4, 4, 0, 0] },
-      label: {
-        show: true,
-        position: 'top',
-        color: CHART_LABEL_COLOR,
-        fontWeight: 600,
-        formatter: (p) => formatMoney(p.value),
-      },
-    }],
-  }
+  ]
 })
 
-const fetchSummary = async () => {
+const charts = computed(() => [
+  { title: 'Clientes que entraram', hint: 'Cadastros por mês, últimos 12 meses', option: joinedOption.value },
+  { title: 'Projetos realizados', hint: 'Projetos concluídos por mês, últimos 12 meses', option: doneOption.value },
+  { title: 'Projetos atrasados', hint: 'Projetos em aberto após o prazo, por tempo de atraso', option: lateOption.value },
+  { title: 'Clientes por tipo', hint: 'Distribuição por status do cliente', option: statusOption.value },
+])
+
+const load = async () => {
+  failed.value = false
   try {
-    summary.value = await apiFetch('/dashboard/summary').then((res) => res.json())
+    const res = await apiFetch('/dashboard/summary')
+    summary.value = await res.json()
   } catch (err) {
-    console.error('Não foi possível carregar o resumo do dashboard.', err)
+    failed.value = true
+    console.error('Não foi possível carregar o dashboard.', err)
   }
 }
 
-onMounted(fetchSummary)
+onMounted(load)
 </script>
 
 <style scoped>
-.kpi-grid {
+.dash-error {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  font-size: 0.875rem;
+}
+
+.dash-error button {
+  margin-left: 8px;
+  font-weight: 600;
+  text-decoration: underline;
+  color: inherit;
+  cursor: pointer;
+}
+
+.status-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
   gap: 20px;
 }
 
-.kpi-card {
+.status-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 18px 20px;
-  border-radius: 16px;
+  gap: 16px;
+  padding: 20px;
 }
 
-.kpi-label {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
+.status-card header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.kpi-value {
-  font-size: 1.6rem;
+.status-card h4,
+.chart-card h4 {
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--color-text);
 }
 
-.kpi-value--sm {
-  font-size: 1rem;
-  font-weight: 600;
+.status-card__icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 0.85rem;
 }
 
-.kpi-value.is-danger {
+.status-card__figures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.figure {
+  display: block;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.figure--ok {
+  color: var(--color-success);
+}
+
+.figure--late {
   color: var(--color-danger);
+}
+
+.figure-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot--ok {
+  background: var(--color-success);
+}
+
+.dot--late {
+  background: var(--color-danger);
+}
+
+.split {
+  display: flex;
+  gap: 3px;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--color-bg-muted);
+}
+
+.split span {
+  flex-basis: 0;
+  min-width: 0;
+}
+
+.split__ok {
+  background: var(--color-success);
+}
+
+.split__late {
+  background: var(--color-danger);
+}
+
+.attention-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 20px;
+}
+
+.attention-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+}
+
+.attention-card header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.attention-card h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.attention-card header p {
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.attention-card__total {
+  min-width: 32px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--color-bg-muted);
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.attention-card__total.has-items {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
+}
+
+.attention-card ul {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.attention-card li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.attention-card li a {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 6px;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.attention-card li a:hover {
+  background: var(--color-bg-hover);
+}
+
+.attention-card__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.attention-card__meta {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.attention-card__empty,
+.attention-card__more {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
 }
 
 .chart-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
   gap: 20px;
 }
 
 .chart-card {
   padding: 20px;
-  border-radius: 16px;
 }
 
-.chart-card h4 {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--color-text);
-  margin-bottom: 12px;
+.chart-card__hint {
+  margin: 2px 0 12px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.chart-card__empty {
+  display: grid;
+  place-items: center;
+  height: 260px;
+  color: var(--color-text-faint);
+  font-size: 0.85rem;
 }
 </style>

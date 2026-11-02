@@ -10,6 +10,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\GoalController;
+use App\Http\Controllers\ImportController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\Portal\PortalController;
@@ -89,6 +90,21 @@ Route::middleware(['auth', 'company', 'permission'])->group(function () {
         Route::post('/', [CustomerController::class, 'create']);
         Route::put('/{id}', [CustomerController::class, 'update']);
         Route::delete('/{id}', [CustomerController::class, 'delete']);
+    });
+
+    Route::prefix('imports')->group(function () {
+        Route::get('/', [ImportController::class, 'list']);
+        Route::where(['type' => 'customer|user'])->group(function () {
+            Route::get('/{type}/template', [ImportController::class, 'template']);
+            Route::post('/{type}/parse', [ImportController::class, 'parse']);
+            Route::post('/{type}/validate', [ImportController::class, 'validateRows']);
+            Route::post('/{type}', [ImportController::class, 'store']);
+        });
+        Route::get('/{id}', [ImportController::class, 'show']);
+        Route::get('/{id}/imported', [ImportController::class, 'imported']);
+        Route::get('/{id}/errors', [ImportController::class, 'errors']);
+        // Sem ".csv" na URL: servidores web tratam extensão como arquivo estático e nem chegam ao Laravel.
+        Route::get('/{id}/errors/csv', [ImportController::class, 'errorsCsv']);
     });
 
     Route::prefix('projects')->group(function () {
