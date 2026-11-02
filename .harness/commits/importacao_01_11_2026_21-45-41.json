@@ -1,0 +1,52 @@
+{
+  "branch": "importacao",
+  "created_at": "2026-11-02T00:45:41.760Z",
+  "author": {
+    "name": "Igor Fronza",
+    "email": "igorfronza20@gmail.com"
+  },
+  "parent": "37e232a4e22114bd4a99e23bd2c3ed4507eeac00",
+  "notes": null,
+  "stats": {
+    "files": 4,
+    "additions": 705,
+    "deletions": 144
+  },
+  "files": [
+    {
+      "status": "M",
+      "path": "backend/app/Models/Customer.php",
+      "additions": 6,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "backend/app/Service/DashboardService.php",
+      "additions": 151,
+      "deletions": 21
+    },
+    {
+      "status": "A",
+      "path": "backend/tests/Feature/DashboardTest.php",
+      "additions": 156,
+      "deletions": 0
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/Dashboard.vue",
+      "additions": 392,
+      "deletions": 123
+    }
+  ],
+  "branch_history": {
+    "base": "main",
+    "merge_base": "b7b828e290e13af688ee053b16bd7e533a7d00aa",
+    "previous_commits": [
+      {
+        "hash": "37e232a4e22114bd4a99e23bd2c3ed4507eeac00",
+        "subject": "Adicionar importação de clientes e usuários por planilha",
+        "committed_at": "2026-10-30T20:16:33-03:00"
+      }
+    ]
+  }
+}
