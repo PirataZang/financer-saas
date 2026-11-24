@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="256" height="256" role="img" aria-label="Financer">
+  <rect width="64" height="64" rx="18" fill="#047857"/>
+  <rect x="17" y="16" width="9" height="32" rx="4.5" fill="#fff"/>
+  <rect x="17" y="16" width="30" height="9" rx="4.5" fill="#fff"/>
+  <rect x="17" y="29.5" width="21" height="9" rx="4.5" fill="#fff"/>
+  <circle cx="45" cy="45" r="5" fill="#6ee7b7"/>
+</svg>
