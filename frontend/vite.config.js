@@ -15,6 +15,10 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: '0.0.0.0',
     port: 5174,
+    // Quick tunnels do Cloudflare mudam de subdomínio a cada execução; o ponto inicial libera todos.
+    allowedHosts: ['.trycloudflare.com'],
+    // Com VITE_API_URL=/api o navegador (VM, túnel, celular) só precisa alcançar o frontend.
+    proxy: { '/api': { target: 'http://backend:8000', changeOrigin: true } },
     watch: {
       usePolling: true
     }

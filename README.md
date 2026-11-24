@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/media/logo-mark.svg" alt="Logo do Financer" width="84">
+
 # Financer SaaS
 
 **CRM + gestão financeira multi-empresa, com portal do cliente, importação em massa e lançamentos pelo Telegram.**

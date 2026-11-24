@@ -105,7 +105,8 @@ services:
     environment:
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true
-      - VITE_API_URL=${VITE_API_URL:-http://localhost:${BACKEND_PORT:-8000}/api}
+      # Relativo: o proxy do Vite (vite.config.js) repassa /api ao backend; funciona por localhost, VM ou túnel.
+      - VITE_API_URL=/api
     depends_on:
       - backend
     networks:
